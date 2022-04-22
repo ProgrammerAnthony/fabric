@@ -48,7 +48,7 @@ var (
 // Cmd returns the cobra command for Node
 func Cmd(cf *ChannelCmdFactory) *cobra.Command {
 	AddFlags(channelCmd)
-
+	//通道支持的命令
 	channelCmd.AddCommand(createCmd(cf))
 	channelCmd.AddCommand(fetchCmd(cf))
 	channelCmd.AddCommand(joinCmd(cf))

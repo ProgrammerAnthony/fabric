@@ -64,7 +64,9 @@ type MetadataHandler interface {
 	UpdateMetadata(channel string, chaincodes chaincode.MetadataSet)
 }
 
+//缓存
 type Cache struct {
+	//channel 名 -》 ChannelCache
 	definedChaincodes map[string]*ChannelCache
 	Resources         *Resources
 	MyOrgMSPID        string
@@ -141,12 +143,14 @@ func NewCache(resources *Resources, myOrgMSPID string, metadataManager MetadataH
 func (c *Cache) InitializeLocalChaincodes() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+	//获取所有installed的链码
 	ccPackages, err := c.Resources.ChaincodeStore.ListInstalledChaincodes()
 	if err != nil {
 		return errors.WithMessage(err, "could not list installed chaincodes")
 	}
 
 	for _, ccPackage := range ccPackages {
+		//加载和解析
 		ccPackageBytes, err := c.Resources.ChaincodeStore.Load(ccPackage.PackageID)
 		if err != nil {
 			return errors.WithMessagef(err, "could not load chaincode with package ID '%s'", ccPackage.PackageID)

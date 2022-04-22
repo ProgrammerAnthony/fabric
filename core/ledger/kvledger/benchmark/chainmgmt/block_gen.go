@@ -55,6 +55,7 @@ func (bg *blkGenerator) startTxEnvCreators() {
 func (bg *blkGenerator) startTxEnvCreator() {
 	bg.wg.Add(1)
 	for sr := range bg.srQueue {
+		//创建交易数据
 		txEnv, err := createTxEnv(sr)
 		panicOnError(err)
 		txEnvBytes, err := proto.Marshal(txEnv)

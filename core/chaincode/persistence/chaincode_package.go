@@ -30,6 +30,7 @@ import (
 // moving to a tar format over the proto format for a user-inspectable
 // artifact seems like a good step.
 
+//chaincode 包是.tar.gz文件，包含metadata.json文件
 const (
 	// MetadataFile is the expected location of the metadata json document
 	// in the top level of the chaincode package.
@@ -55,6 +56,8 @@ func (fpl *FallbackPackageLocator) GetChaincodePackage(packageID string) (*Chain
 	// XXX, this path has too many return parameters.  We could split it into two calls,
 	// or, we could deserialize the metadata where it's needed.  But, as written was the
 	// fastest path to fixing a bug around the mutation of metadata.
+
+	//gRPC？
 	streamer := fpl.ChaincodePackageLocator.ChaincodePackageStreamer(packageID)
 	if streamer.Exists() {
 		metadata, err := streamer.Metadata()

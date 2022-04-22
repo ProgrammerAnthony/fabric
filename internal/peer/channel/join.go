@@ -22,6 +22,7 @@ import (
 
 const commandDescription = "Joins the peer to a channel."
 
+//channel join 处理
 func joinCmd(cf *ChannelCmdFactory) *cobra.Command {
 	// Set the flags on the channel start command.
 	joinCmd := &cobra.Command{
@@ -75,6 +76,7 @@ func getJoinCCSpec() (*pb.ChaincodeSpec, error) {
 	return spec, nil
 }
 
+//例如当peer节点加入通道时调用peer join时会向背书节点发送签名消息。
 func executeJoin(cf *ChannelCmdFactory) (err error) {
 	spec, err := getJoinCCSpec()
 	if err != nil {
@@ -82,6 +84,7 @@ func executeJoin(cf *ChannelCmdFactory) (err error) {
 	}
 
 	// Build the ChaincodeInvocationSpec message
+	//构建ChaincodeInvocationSpec CIS
 	invocation := &pb.ChaincodeInvocationSpec{ChaincodeSpec: spec}
 
 	creator, err := cf.Signer.Serialize()
@@ -90,18 +93,21 @@ func executeJoin(cf *ChannelCmdFactory) (err error) {
 	}
 
 	var prop *pb.Proposal
+	//创建链码proposal
 	prop, _, err = protoutil.CreateProposalFromCIS(pcommon.HeaderType_CONFIG, "", invocation, creator)
 	if err != nil {
 		return fmt.Errorf("Error creating proposal for join %s", err)
 	}
 
 	var signedProp *pb.SignedProposal
+	//获取验签后的proposal
 	signedProp, err = protoutil.GetSignedProposal(prop, cf.Signer)
 	if err != nil {
 		return fmt.Errorf("Error creating signed proposal %s", err)
 	}
 
 	var proposalResp *pb.ProposalResponse
+	//请求处理proposal，回复 proposal response
 	proposalResp, err = cf.EndorserClient.ProcessProposal(context.Background(), signedProp)
 	if err != nil {
 		return ProposalFailedErr(err.Error())

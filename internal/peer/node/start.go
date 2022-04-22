@@ -474,6 +474,7 @@ func serve(args []string) error {
 
 	// Parameter overrides must be processed before any parameters are
 	// cached. Failures to cache cause the server to terminate immediately.
+	//链码开发者模式
 	if chaincodeDevMode {
 		logger.Info("Running in chaincode development mode")
 		logger.Info("Disable loading validity system chaincode")
@@ -506,12 +507,14 @@ func serve(args []string) error {
 	if err != nil {
 		logger.Panic("Failed creating authentication layer:", err)
 	}
+	//创建链码server
 	ccSrv, ccEndpoint, err := createChaincodeServer(coreConfig, ca, peerHost)
 	if err != nil {
 		logger.Panicf("Failed to create chaincode server: %s", err)
 	}
 
 	//get user mode
+	//判断是否是开发模式
 	userRunsCC := chaincode.IsDevMode()
 	tlsEnabled := coreConfig.PeerTLSEnabled
 
@@ -532,11 +535,13 @@ func serve(args []string) error {
 
 	var dockerBuilder container.DockerBuilder
 	if coreConfig.VMEndpoint != "" {
+		//docker client链接
 		client, err := createDockerClient(coreConfig)
 		if err != nil {
 			logger.Panicf("cannot create docker client: %s", err)
 		}
 
+		//docker 虚拟机
 		dockerVM := &dockercontroller.DockerVM{
 			PeerID:        coreConfig.PeerID,
 			NetworkID:     coreConfig.NetworkID,
@@ -571,6 +576,7 @@ func serve(args []string) error {
 		dockerBuilder = &disabledDockerBuilder{}
 	}
 
+	//外部运行器（Fabric v2.0支持将链码在Faric外部部署与执行以方便用户独立管理每个节点的代码运行环境）
 	externalVM := &externalbuilder.Detector{
 		Builders:    externalbuilder.CreateBuilders(coreConfig.ExternalBuilders, mspID),
 		DurablePath: externalBuilderOutput,
@@ -870,8 +876,10 @@ func serve(args []string) error {
 	}
 
 	// start the peer server
+	//当peer节点启动时会启动grpc server，调用RegisterEndorserServer将Endorser注册到gprc服务。
 	auth := authHandler.ChainFilters(serverEndorser, authFilters...)
 	// Register the Endorser server
+	//Endorser实现了服务端的接口，将对应的接口注册到服务器
 	pb.RegisterEndorserServer(peerServer.Server(), auth)
 
 	go func() {
@@ -973,6 +981,7 @@ func registerDiscoveryService(
 }
 
 // create a CC listener using peer.chaincodeListenAddress (and if that's not set use peer.peerAddress)
+//创建链码 的server
 func createChaincodeServer(coreConfig *peer.Config, ca tlsgen.CA, peerHostname string) (srv *comm.GRPCServer, ccEndpoint string, err error) {
 	// before potentially setting chaincodeListenAddress, compute chaincode endpoint at first
 	ccEndpoint, err = computeChaincodeEndpoint(coreConfig.ChaincodeAddress, coreConfig.ChaincodeListenAddress, peerHostname)
@@ -1039,7 +1048,7 @@ func createChaincodeServer(coreConfig *peer.Config, ca tlsgen.CA, peerHostname s
 	}
 	config.KaOpts = chaincodeKeepaliveOptions
 	config.HealthCheckEnabled = true
-
+	//新建server
 	srv, err = comm.NewGRPCServer(cclistenAddress, config)
 	if err != nil {
 		logger.Errorf("Error creating GRPC server: %s", err)
@@ -1163,6 +1172,7 @@ func secureDialOpts(credSupport *comm.CredentialSupport) func() []grpc.DialOptio
 // 2. Init the message crypto service;
 // 3. Init the security advisor;
 // 4. Init gossip related struct.
+// 初始化gossip相关，用于节点发现和消息处理
 func initGossipService(
 	policyMgr policies.ChannelPolicyManagerGetter,
 	metricsProvider metrics.Provider,
@@ -1381,5 +1391,6 @@ func (r *reset) ProcessProposal(ctx context.Context, signedProp *pb.SignedPropos
 	if r.reject {
 		return nil, errors.New("endorse requests are blocked while ledgers are being rebuilt")
 	}
+	//调用gRPC接口
 	return r.next.ProcessProposal(ctx, signedProp)
 }

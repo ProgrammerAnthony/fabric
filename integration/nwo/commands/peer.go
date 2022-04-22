@@ -398,6 +398,9 @@ func (c ChaincodeQueryApproved) Args() []string {
 	return args
 }
 
+//一旦足够多的通道成员同意一个链码定义，某个组织能够提交定义到通道。
+//你可以用 checkcommitreadiness 命令在使用 Peer CLI 工具将链码定义提交到通道之前，
+//基于哪个通道成员已经批准了该定义，来检查提交链码定义是否应该成功。
 type ChaincodeCheckCommitReadiness struct {
 	ChannelID           string
 	Name                string

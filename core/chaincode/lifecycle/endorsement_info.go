@@ -16,6 +16,7 @@ import (
 
 // Lifecycle is the interface which the core/chaincode package and core/endorser package requires that lifecycle satisfy.
 type Lifecycle interface {
+	//链码在被成功提交到通道之前，需要被同意的组织的数量是通过 Channel/Application/LifecycleEndorsement 策略来管理的。
 	ChaincodeEndorsementInfo(channelID, chaincodeName string, qe ledger.SimpleQueryExecutor) (*ChaincodeEndorsementInfo, error)
 }
 

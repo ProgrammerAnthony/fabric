@@ -29,6 +29,7 @@ printHelp() {
 # note, if a docker image doesn't exist for a requested release, it will simply
 # be skipped, since this script doesn't terminate upon errors.
 
+# 拉取镜像
 dockerPull() {
     #three_digit_image_tag is passed in, e.g. "1.4.7"
     three_digit_image_tag=$1
@@ -46,6 +47,7 @@ dockerPull() {
     done
 }
 
+# clone 实例代码
 cloneSamplesRepo() {
     # clone (if needed) hyperledger/fabric-samples and checkout corresponding
     # version to the binaries and docker images to be downloaded
@@ -78,6 +80,7 @@ download() {
     fi
 }
 
+# 拉fabric和fabric ca二进制文件
 pullBinaries() {
     echo "===> Downloading version ${FABRIC_TAG} platform specific fabric binaries"
     download "${BINARY_FILE}" "https://github.com/hyperledger/fabric/releases/download/v${VERSION}/${BINARY_FILE}"

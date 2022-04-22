@@ -72,6 +72,7 @@ func installCmd(cf *ChaincodeCmdFactory, i *Installer, cryptoProvider bccsp.BCCS
 					CryptoProvider:  cryptoProvider,
 				}
 			}
+			//安装链码
 			return i.installChaincode(args)
 		},
 	}
@@ -118,24 +119,29 @@ func (i *Installer) setInput(args []string) {
 // install installs a chaincode deployment spec to "peer.address"
 // for use with lscc
 func (i *Installer) install() error {
+	//由ChaincodeDeploymentSpec（CDS）格式定义的链码，生成ChaincodeDeploymentSpec
 	ccPkgMsg, err := i.getChaincodePackageMessage()
 	if err != nil {
 		return err
 	}
 
+	//对ChaincodeDeploymentSpec创建install proposal
 	proposal, err := i.createInstallProposal(ccPkgMsg)
 	if err != nil {
 		return err
 	}
 
+	//获取signed proposal
 	signedProposal, err := protoutil.GetSignedProposal(proposal, i.Signer)
 	if err != nil {
 		return errors.WithMessagef(err, "error creating signed proposal for %s", chainFuncName)
 	}
 
+	//安装过程
 	return i.submitInstallProposal(signedProposal)
 }
 
+//提交install proposal过程，安装过程
 func (i *Installer) submitInstallProposal(signedProposal *pb.SignedProposal) error {
 	// install is currently only supported for one peer
 	proposalResponse, err := i.EndorserClients[0].ProcessProposal(context.Background(), signedProposal)
@@ -159,6 +165,7 @@ func (i *Installer) submitInstallProposal(signedProposal *pb.SignedProposal) err
 	return nil
 }
 
+//生成ChaincodeDeploymentSpec
 func (i *Installer) getChaincodePackageMessage() (proto.Message, error) {
 	// if no package provided, create one
 	if i.Input.PackageFile == "" {
@@ -204,6 +211,7 @@ func (i *Installer) createInstallProposal(msg proto.Message) (*pb.Proposal, erro
 		return nil, errors.WithMessage(err, "error serializing identity")
 	}
 
+	//对ChaincodeDeploymentSpec创建install proposal
 	prop, _, err := protoutil.CreateInstallProposalFromCDS(msg, creator)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error creating proposal for %s", chainFuncName)

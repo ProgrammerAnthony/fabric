@@ -41,6 +41,7 @@ type GRPCServer struct {
 
 // NewGRPCServer creates a new implementation of a GRPCServer given a
 // listen address
+//创建grpc server
 func NewGRPCServer(address string, serverConfig ServerConfig) (*GRPCServer, error) {
 	if address == "" {
 		return nil, errors.New("missing address parameter")
@@ -55,7 +56,8 @@ func NewGRPCServer(address string, serverConfig ServerConfig) (*GRPCServer, erro
 }
 
 // NewGRPCServerFromListener creates a new implementation of a GRPCServer given
-// an existing net.Listener instance using default keepalive
+// an existing net.Listener instance using default keepalive、
+//创建server，包含tls配置
 func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig) (*GRPCServer, error) {
 	grpcServer := &GRPCServer{
 		address:  listener.Addr().String(),
@@ -67,6 +69,7 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 	var serverOpts []grpc.ServerOption
 
 	secureConfig := serverConfig.SecOpts
+	//包含tls配置
 	if secureConfig.UseTLS {
 		//both key and cert are required
 		if secureConfig.Key != nil && secureConfig.Certificate != nil {
@@ -87,6 +90,7 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 				return &cert, nil
 			}
 
+			//tls配置
 			grpcServer.tls = NewTLSConfig(&tls.Config{
 				VerifyPeerCertificate:  secureConfig.VerifyCertificate,
 				GetCertificate:         getCert,
@@ -164,6 +168,7 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 		serverOpts = append(serverOpts, grpc.StatsHandler(serverConfig.ServerStatsHandler))
 	}
 
+	//gRPC接口
 	grpcServer.server = grpc.NewServer(serverOpts...)
 
 	if serverConfig.HealthCheckEnabled {

@@ -28,6 +28,7 @@ type GRPCClient struct {
 
 // NewGRPCClient creates a new implementation of GRPCClient given an address
 // and client configuration
+//新建grpc client
 func NewGRPCClient(config ClientConfig) (*GRPCClient, error) {
 	client := &GRPCClient{}
 

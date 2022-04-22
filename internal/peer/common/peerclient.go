@@ -36,6 +36,7 @@ func NewPeerClientFromEnv() (*PeerClient, error) {
 
 // NewPeerClientForAddress creates an instance of a PeerClient using the
 // provided peer address and, if TLS is enabled, the TLS root cert file
+//创建PeerClient实例，底层封装GrpcClient进行网络请求
 func NewPeerClientForAddress(address, tlsRootCertFile string) (*PeerClient, error) {
 	if address == "" {
 		return nil, errors.New("peer address must be set")
@@ -142,6 +143,7 @@ func (pc *PeerClient) Certificate() tls.Certificate {
 // tlsRootCertFile are not provided, the target values for the client are taken
 // from the configuration settings for "peer.address" and
 // "peer.tls.rootcert.file"
+//客户端调用时需要先获取EndorserClient，传入address获取peerClient，然后获取EndorserClient的gprc连接。
 func GetEndorserClient(address, tlsRootCertFile string) (pb.EndorserClient, error) {
 	var peerClient *PeerClient
 	var err error

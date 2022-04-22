@@ -269,6 +269,7 @@ func (p *Peer) createChannel(
 			Application: ac,
 			Channel:     bundle.ChannelConfig(),
 		})
+		//发现peer节点
 		p.GossipService.SuspectPeers(func(identity api.PeerIdentityType) bool {
 			// TODO: this is a place-holder that would somehow make the MSP layer suspect
 			// that a given certificate is revoked, or its intermediate CA is revoked.

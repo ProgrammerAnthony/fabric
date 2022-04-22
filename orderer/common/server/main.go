@@ -67,6 +67,8 @@ var (
 	clusterTypes = map[string]struct{}{"etcdraft": {}}
 )
 
+//orderer节点初始化
+
 // Main is the entry point of orderer process
 func Main() {
 	fullCmd := kingpin.MustParse(app.Parse(os.Args[1:]))
@@ -97,8 +99,9 @@ func Main() {
 	metricsProvider := opsSystem.Provider
 	logObserver := floggingmetrics.NewObserver(metricsProvider)
 	flogging.SetObserver(logObserver)
-
+	//初始化服务配置
 	serverConfig := initializeServerConfig(conf, metricsProvider)
+	//创建gRPC server
 	grpcServer := initializeGrpcServer(conf, serverConfig)
 	caMgr := &caManager{
 		appRootCAsByChain:     make(map[string][][]byte),
@@ -113,6 +116,7 @@ func Main() {
 
 	var bootstrapBlock *cb.Block
 	if conf.General.BootstrapMethod == "file" {
+		//创建创世区块
 		bootstrapBlock = file.New(conf.General.BootstrapFile).GenesisBlock()
 		if err := onboarding.ValidateBootstrapBlock(bootstrapBlock, cryptoProvider); err != nil {
 			logger.Panicf("Failed validating bootstrap block: %v", err)
@@ -122,6 +126,7 @@ func Main() {
 		// If yes, generate the system channel with a genesis block.
 		if len(lf.ChannelIDs()) == 0 && bootstrapBlock.Header.Number == 0 {
 			logger.Info("Bootstrapping the system channel")
+			//默认初始化channel
 			initializeBootstrapChannel(bootstrapBlock, lf)
 		} else if len(lf.ChannelIDs()) > 0 {
 			logger.Info("Not bootstrapping the system channel because of existing channels")
@@ -139,6 +144,7 @@ func Main() {
 	// determine whether the orderer is of cluster type
 	var isClusterType bool
 	if clusterBootBlock == nil {
+		//集群模式不需要创世块？
 		logger.Infof("Starting without a system channel")
 		isClusterType = true
 	} else {
@@ -648,6 +654,7 @@ func initializeGrpcServer(conf *localconfig.TopLevel, serverConfig comm.ServerCo
 	}
 
 	// Create GRPC server - return if an error occurs
+	//创建gRPC server
 	grpcServer, err := comm.NewGRPCServerFromListener(lis, serverConfig)
 	if err != nil {
 		logger.Fatal("Failed to return new GRPC server:", err)

@@ -40,7 +40,7 @@ func addFlags(cmd *cobra.Command) {
 // Cmd returns the cobra command for Chaincode
 func Cmd(cf *ChaincodeCmdFactory, cryptoProvider bccsp.BCCSP) *cobra.Command {
 	addFlags(chaincodeCmd)
-
+	//添加了一些链码指令
 	chaincodeCmd.AddCommand(installCmd(cf, nil, cryptoProvider))
 	chaincodeCmd.AddCommand(instantiateCmd(cf, cryptoProvider))
 	chaincodeCmd.AddCommand(invokeCmd(cf, cryptoProvider))

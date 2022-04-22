@@ -46,11 +46,13 @@ func (r *certMapper) register(hash certHash, name string) {
 	r.Lock()
 	defer r.Unlock()
 	r.m[hash] = name
+	//到期删除
 	time.AfterFunc(ttl, func() {
 		r.purge(hash)
 	})
 }
 
+//删除
 func (r *certMapper) purge(hash certHash) {
 	r.Lock()
 	defer r.Unlock()
@@ -62,6 +64,7 @@ func (r *certMapper) genCert(name string) (*tlsgen.CertKeyPair, error) {
 	if err != nil {
 		return nil, err
 	}
+	//tls SHA256 证书
 	hash := util.ComputeSHA256(keyPair.TLSCert.Raw)
 	r.register(certHash(hash), name)
 	return keyPair, nil

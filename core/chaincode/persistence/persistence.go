@@ -24,6 +24,7 @@ import (
 
 var logger = flogging.MustGetLogger("chaincode.persistence")
 
+//基于文件实现的生命周期处理
 // IOReadWriter defines the interface needed for reading, writing, removing, and
 // checking for existence of a specified file
 type IOReadWriter interface {

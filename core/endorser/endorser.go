@@ -247,6 +247,7 @@ func (e *Endorser) SimulateProposal(txParams *ccprovider.TransactionParams, chai
 }
 
 // preProcess checks the tx proposal headers, uniqueness and ACL
+//校验proposal签名，检查是否满足Channel ACL
 func (e *Endorser) preProcess(up *UnpackedProposal, channel *Channel) error {
 	// at first, we check whether the message is valid
 
@@ -293,6 +294,7 @@ func (e *Endorser) preProcess(up *UnpackedProposal, channel *Channel) error {
 }
 
 // ProcessProposal process the Proposal
+//endorser 角色处理gRPC请求
 func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedProposal) (*pb.ProposalResponse, error) {
 	// start time for computing elapsed time metric for successfully endorsed proposals
 	startTime := time.Now()
@@ -304,6 +306,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	// variables to capture proposal duration metric
 	success := false
 
+	//解包proposal
 	up, err := UnpackProposal(signedProp)
 	if err != nil {
 		e.Metrics.ProposalValidationFailed.Add(1)
@@ -312,6 +315,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 
 	var channel *Channel
 	if up.ChannelID() != "" {
+		//获取对应的channel
 		channel = e.ChannelFetcher.Channel(up.ChannelID())
 		if channel == nil {
 			return &pb.ProposalResponse{Response: &pb.Response{Status: 500, Message: fmt.Sprintf("channel '%s' not found", up.ChannelHeader.ChannelId)}}, nil
@@ -323,6 +327,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 	}
 
 	// 0 -- check and validate
+	//校验proposal签名，检查是否满足Channel ACL
 	err = e.preProcess(up, channel)
 	if err != nil {
 		return &pb.ProposalResponse{Response: &pb.Response{Status: 500, Message: err.Error()}}, err
@@ -337,6 +342,7 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 		e.Metrics.ProposalDuration.With(meterLabels...).Observe(time.Since(startTime).Seconds())
 	}()
 
+	//模拟执行交易并对结果进行签名
 	pResp, err := e.ProcessProposalSuccessfullyOrError(up)
 	if err != nil {
 		endorserLogger.Warnw("Failed to invoke chaincode", "channel", up.ChannelHeader.ChannelId, "chaincode", up.ChaincodeName, "error", err.Error())
@@ -350,11 +356,13 @@ func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedPro
 		success = true
 
 		// total failed proposals = ProposalsReceived-SuccessfulProposals
+		//统计
 		e.Metrics.SuccessfulProposals.Add(1)
 	}
 	return pResp, nil
 }
 
+//模拟执行交易并对结果进行签名
 func (e *Endorser) ProcessProposalSuccessfullyOrError(up *UnpackedProposal) (*pb.ProposalResponse, error) {
 	txParams := &ccprovider.TransactionParams{
 		ChannelID:  up.ChannelHeader.ChannelId,
@@ -394,7 +402,8 @@ func (e *Endorser) ProcessProposalSuccessfullyOrError(up *UnpackedProposal) (*pb
 		return nil, errors.WithMessagef(err, "make sure the chaincode %s has been successfully defined on channel %s and try again", up.ChaincodeName, up.ChannelID())
 	}
 
-	// 1 -- simulate
+	// 1 -- simulate、
+	//模拟执行交易并对结果进行签名
 	res, simulationResult, ccevent, err := e.SimulateProposal(txParams, up.ChaincodeName, up.Input)
 	if err != nil {
 		return nil, errors.WithMessage(err, "error in simulation")

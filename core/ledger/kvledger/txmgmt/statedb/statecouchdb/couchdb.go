@@ -224,6 +224,7 @@ func closeResponseBody(resp *http.Response) {
 }
 
 //createDatabaseIfNotExist method provides function to create database
+//创建数据库
 func (dbclient *couchDatabase) createDatabaseIfNotExist() error {
 	couchdbLogger.Debugf("[%s] Entering CreateDatabaseIfNotExist()", dbclient.dbName)
 

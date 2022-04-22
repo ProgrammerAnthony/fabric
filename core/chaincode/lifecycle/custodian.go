@@ -18,6 +18,7 @@ type ChaincodeLauncher interface {
 	Stop(ccid string) error
 }
 
+//链码管理者角色
 // ChaincodeCustodian is responsible for enqueuing builds and launches
 // of chaincodes as they become available and stops when chaincodes
 // are no longer referenced by an active chaincode definition.

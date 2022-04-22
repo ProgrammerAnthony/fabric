@@ -46,6 +46,7 @@ func checkSpec(spec *pb.ChaincodeSpec) error {
 }
 
 // getChaincodeDeploymentSpec get chaincode deployment spec given the chaincode spec
+//生成编译后的链码
 func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.ChaincodeDeploymentSpec, error) {
 	var codePackageBytes []byte
 	if crtPkg {
@@ -69,6 +70,7 @@ func getChaincodeDeploymentSpec(spec *pb.ChaincodeSpec, crtPkg bool) (*pb.Chainc
 }
 
 // getChaincodeSpec get chaincode spec from the cli cmd parameters
+//获取 Chaincode spec
 func getChaincodeSpec(cmd *cobra.Command) (*pb.ChaincodeSpec, error) {
 	spec := &pb.ChaincodeSpec{}
 	if err := checkChaincodeCmdParams(cmd); err != nil {
@@ -118,6 +120,7 @@ func (c *chaincodeInput) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+//invoke和query都会走到这里
 func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFactory) (err error) {
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
@@ -145,6 +148,7 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFac
 	}
 
 	if invoke {
+		//ESCC 通过对交易提案进行签名来处理背书过程
 		logger.Debugf("ESCC invoke result: %v", proposalResp)
 		pRespPayload, err := protoutil.UnmarshalProposalResponsePayload(proposalResp.Payload)
 		if err != nil {

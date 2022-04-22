@@ -31,6 +31,7 @@ type ExternalChaincodeRuntime struct {
 
 // createConnection - standard grpc client creating using ClientConfig info (surprised there isn't
 // a helper method for this)
+//创建链接，使用ClientConfig
 func (i *ExternalChaincodeRuntime) createConnection(ccid string, ccinfo *ccintf.ChaincodeServerInfo) (*grpc.ClientConn, error) {
 	grpcClient, err := comm.NewGRPCClient(ccinfo.ClientConfig)
 	if err != nil {
@@ -65,6 +66,7 @@ func (i *ExternalChaincodeRuntime) Stream(ccid string, ccinfo *ccintf.ChaincodeS
 	}
 
 	//peer as client has to initiate the stream. Rest of the process is unchanged
+	//StreamHandler 负责处理ChaincodeStream
 	sHandler.HandleChaincodeStream(stream)
 
 	extccLogger.Debugf("External chaincode %s client exited", ccid)

@@ -19,6 +19,7 @@ import (
 
 var logger = flogging.MustGetLogger("chaincode.accesscontrol")
 
+//权限控制
 // CertAndPrivKeyPair contains a certificate
 // and its corresponding private key in base64 format
 type CertAndPrivKeyPair struct {
@@ -46,6 +47,7 @@ func NewAuthenticator(ca tlsgen.CA) *Authenticator {
 // Generate returns a pair of certificate and private key,
 // and associates the hash of the certificate with the given
 // chaincode name
+//生成certificate和private key，关联证书和链码
 func (ac *Authenticator) Generate(ccName string) (*CertAndPrivKeyPair, error) {
 	cert, err := ac.mapper.genCert(ccName)
 	if err != nil {
@@ -71,6 +73,7 @@ func (ac *Authenticator) authenticate(msg *pb.ChaincodeMessage, stream grpc.Serv
 	}
 	ccName := chaincodeID.Name
 	// Obtain certificate from stream
+	//从Stream中 查找certificate
 	hash := extractCertificateHashFromContext(stream.Context())
 	if len(hash) == 0 {
 		errMsg := fmt.Sprintf("TLS is active but chaincode %s didn't send certificate", ccName)
@@ -78,12 +81,14 @@ func (ac *Authenticator) authenticate(msg *pb.ChaincodeMessage, stream grpc.Serv
 		return errors.New(errMsg)
 	}
 	// Look it up in the mapper
+	//应该是本地查找对应的证书
 	registeredName := ac.mapper.lookup(certHash(hash))
 	if registeredName == "" {
 		errMsg := fmt.Sprintf("Chaincode %s with given certificate hash %v not found in registry", ccName, hash)
 		logger.Warning(errMsg)
 		return errors.New(errMsg)
 	}
+	//证书和链码名不匹配
 	if registeredName != ccName {
 		errMsg := fmt.Sprintf("Chaincode %s with given certificate hash %v belongs to a different chaincode", ccName, hash)
 		logger.Warning(errMsg)

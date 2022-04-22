@@ -45,6 +45,7 @@ func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayloa
 }
 
 // GetEnvelopeFromBlock gets an envelope from a block's Data field.
+//Envelope封装了payload和hash
 func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 	// Block always begins with an envelope
 	var err error

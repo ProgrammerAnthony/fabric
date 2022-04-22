@@ -56,6 +56,7 @@ func createTxEnv(simulationResults []byte) (*common.Envelope, error) {
 			return nil, err
 		}
 	}
+	//包含链码，以RWSet的形式
 	presp, err := protoutil.CreateProposalResponse(prop.Header, prop.Payload, nil, simulationResults, nil, dummyCCID, signer)
 	if err != nil {
 		return nil, err

@@ -346,6 +346,7 @@ func (ef *ExternalFunctions) CheckCommitReadiness(chname, ccname string, cd *Cha
 // the public world state. It is the responsibility of the caller to check
 // the approvals to determine if the result is valid (typically, this means
 // checking that the peer's own org has approved the definition).
+//提交链码
 func (ef *ExternalFunctions) CommitChaincodeDefinition(chname, ccname string, cd *ChaincodeDefinition, publicState ReadWritableState, orgStates []OpaqueState) (map[string]bool, error) {
 	approvals, err := ef.CheckCommitReadiness(chname, ccname, cd, publicState, orgStates)
 	if err != nil {
@@ -411,6 +412,7 @@ func (ef *ExternalFunctions) SetChaincodeDefinitionDefaults(chname string, cd *C
 // ApproveChaincodeDefinitionForOrg adds a chaincode definition entry into the passed in Org state.  The definition must be
 // for either the currently defined sequence number or the next sequence number.  If the definition is
 // for the current sequence number, then it must match exactly the current definition or it will be rejected.
+//将链码添加到传入的org state里去，需要保证sequece有序
 func (ef *ExternalFunctions) ApproveChaincodeDefinitionForOrg(chname, ccname string, cd *ChaincodeDefinition, packageID string, publicState ReadableState, orgState ReadWritableState) error {
 	// Get the current sequence from the public state
 	currentSequence, err := ef.Resources.Serializer.DeserializeFieldAsInt64(NamespacesName, ccname, "Sequence", publicState)

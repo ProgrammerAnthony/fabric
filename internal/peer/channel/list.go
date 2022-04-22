@@ -39,6 +39,7 @@ func listCmd(cf *ChannelCmdFactory) *cobra.Command {
 	}
 }
 
+//list channels
 func (cc *endorserClient) getChannels() ([]*pb.ChannelInfo, error) {
 	var err error
 
@@ -81,6 +82,7 @@ func (cc *endorserClient) getChannels() ([]*pb.ChannelInfo, error) {
 	return channelQueryResponse.Channels, nil
 }
 
+//list
 func list(cf *ChannelCmdFactory) error {
 	var err error
 	if cf == nil {

@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+//新建block
 // NewBlock constructs a block with no data and no metadata.
 func NewBlock(seqNum uint64, previousHash []byte) *cb.Block {
 	block := &cb.Block{}

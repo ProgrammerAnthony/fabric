@@ -173,6 +173,7 @@ func (scc *SCC) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // Invoke takes chaincode invocation arguments and routes them to the correct
 // underlying lifecycle operation.  All functions take a single argument of
 // type marshaled lb.<FunctionName>Args and return a marshaled lb.<FunctionName>Result
+// 路由接口，将请求转发到对应的生命周期处理
 func (scc *SCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	args := stub.GetArgs()
 	if len(args) == 0 {
@@ -201,11 +202,13 @@ func (scc *SCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	}
 
 	// Handle ACL:
+	//处理权限认证管理
 	sp, err := stub.GetSignedProposal()
 	if err != nil {
 		return shim.Error(fmt.Sprintf("Failed getting signed proposal from stub: [%s]", err))
 	}
 
+	//权限检查
 	err = scc.ACLProvider.CheckACL(fmt.Sprintf("%s/%s", LifecycleNamespace, args[0]), stub.GetChannelID(), sp)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("Failed to authorize invocation due to failed ACL check: %s", err))
@@ -245,6 +248,7 @@ type Invocation struct {
 
 // InstallChaincode is a SCC function that may be dispatched to which routes
 // to the underlying lifecycle implementation.
+//安装链码
 func (i *Invocation) InstallChaincode(input *lb.InstallChaincodeArgs) (proto.Message, error) {
 	if logger.IsEnabledFor(zapcore.DebugLevel) {
 		end := 35
@@ -275,6 +279,7 @@ func (i *Invocation) InstallChaincode(input *lb.InstallChaincodeArgs) (proto.Mes
 
 // QueryInstalledChaincode is a SCC function that may be dispatched to which
 // routes to the underlying lifecycle implementation.
+//查询已经安装的链码
 func (i *Invocation) QueryInstalledChaincode(input *lb.QueryInstalledChaincodeArgs) (proto.Message, error) {
 	logger.Debugf("received invocation of QueryInstalledChaincode for install package ID '%s'",
 		input.PackageId,
@@ -309,6 +314,7 @@ func (i *Invocation) QueryInstalledChaincode(input *lb.QueryInstalledChaincodeAr
 
 // GetInstalledChaincodePackage is a SCC function that may be dispatched to
 // which routes to the underlying lifecycle implementation.
+//获取已经安装的链码package
 func (i *Invocation) GetInstalledChaincodePackage(input *lb.GetInstalledChaincodePackageArgs) (proto.Message, error) {
 	logger.Debugf("received invocation of GetInstalledChaincodePackage")
 
@@ -418,6 +424,7 @@ func (i *Invocation) ApproveChaincodeDefinitionForMyOrg(input *lb.ApproveChainco
 
 // QueryApprovedChaincodeDefinition is a SCC function that may be dispatched
 // to which routes to the underlying lifecycle implementation.
+//获取经过背书的链码？
 func (i *Invocation) QueryApprovedChaincodeDefinition(input *lb.QueryApprovedChaincodeDefinitionArgs) (proto.Message, error) {
 	logger.Debugf("received invocation of QueryApprovedChaincodeDefinition on channel '%s' for chaincode '%s'",
 		i.Stub.GetChannelID(),

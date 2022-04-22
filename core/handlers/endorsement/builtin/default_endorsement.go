@@ -15,6 +15,9 @@ import (
 
 // DefaultEndorsementFactory returns an endorsement plugin factory which returns plugins
 // that behave as the default endorsement system chaincode
+
+//DefaultEndorsement是默认的endorsement system chaincode 背书系统链码，由DefaultEndorsementFactory返回
+
 type DefaultEndorsementFactory struct {
 }
 
@@ -49,6 +52,7 @@ func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not sign the proposal response payload")
 	}
+	//签名背书
 	endorsement := &peer.Endorsement{Signature: signature, Endorser: identityBytes}
 	return endorsement, prpBytes, nil
 }

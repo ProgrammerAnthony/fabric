@@ -104,6 +104,7 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 // chaincodeDeploy instantiates the chaincode. On success, the chaincode name
 // (hash) is printed to STDOUT for use by subsequent chaincode-related CLI
 // commands.
+//初始化后的代码=运行中=deploy，可以执行query，update等
 func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory, cryptoProvider bccsp.BCCSP) error {
 	if channelID == "" {
 		return errors.New("The required parameter 'channelID' is empty. Rerun the command with -C flag")

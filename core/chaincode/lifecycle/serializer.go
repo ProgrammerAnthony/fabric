@@ -23,6 +23,7 @@ const (
 	FieldsInfix   = "fields"
 )
 
+//定义序列化接口
 type ReadWritableState interface {
 	ReadableState
 	PutState(key string, value []byte) error

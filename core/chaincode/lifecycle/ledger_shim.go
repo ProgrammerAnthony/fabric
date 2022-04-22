@@ -40,6 +40,7 @@ func StateIteratorToMap(itr StateIterator) (map[string][]byte, error) {
 
 // ChaincodePublicLedgerShim decorates the chaincode shim to support the state interfaces
 // required by the serialization code.
+//链码的基本结构
 type ChaincodePublicLedgerShim struct {
 	shim.ChaincodeStubInterface
 }
