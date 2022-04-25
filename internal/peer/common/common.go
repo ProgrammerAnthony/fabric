@@ -329,6 +329,7 @@ func InitCmd(cmd *cobra.Command, args []string) {
 	if mspType == "" {
 		mspType = msp.ProviderTypeToString(msp.FABRIC)
 	}
+	//初始化加密相关
 	err = InitCrypto(mspMgrConfigDir, mspID, mspType)
 	if err != nil { // Handle errors reading the config file
 		mainLogger.Errorf("Cannot run peer because %s", err.Error())

@@ -111,6 +111,7 @@ func (d *DB) Commit(block *common.Block) error {
 				return err
 			}
 			txRWSet := &rwsetutil.TxRwSet{}
+			//读写集会存储到history db
 			if err = txRWSet.FromProtoBytes(respPayload.Results); err != nil {
 				return err
 			}

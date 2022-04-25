@@ -14,6 +14,7 @@ import (
 )
 
 // ChaincodeDefinition captures the info about chaincode
+// ChaincodeDefinition 包含链码信息
 type ChaincodeDefinition struct {
 	Name              string
 	Hash              []byte
@@ -31,6 +32,7 @@ func (cdef *ChaincodeDefinition) String() string {
 // ChaincodeLifecycleEventListener interface enables ledger components (mainly, intended for statedb)
 // to be able to listen to chaincode lifecycle events. 'dbArtifactsTar' represents db specific artifacts
 // (such as index specs) packaged in a tar
+//账本组件，监听链码生命周期处理流程
 type ChaincodeLifecycleEventListener interface {
 	// HandleChaincodeDeploy is invoked when chaincode installed + defined becomes true.
 	// The expected usage are to creates all the necessary statedb structures (such as indexes) and update
@@ -43,6 +45,7 @@ type ChaincodeLifecycleEventListener interface {
 }
 
 // ChaincodeInfoProvider interface enables event mgr to retrieve chaincode info for a given chaincode
+// ledger获取chaincode相关信息
 type ChaincodeInfoProvider interface {
 	// GetDeployedChaincodeInfo retrieves the details about the deployed chaincode.
 	// This function is expected to return nil, if the chaincode with the given name is not deployed

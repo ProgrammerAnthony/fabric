@@ -41,6 +41,7 @@ func init() {
 		serializedSigner)
 }
 
+//创建交易数据
 func createTxEnv(simulationResults []byte) (*common.Envelope, error) {
 	var prop *pb.Proposal
 	var err error

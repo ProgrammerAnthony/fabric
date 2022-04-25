@@ -50,6 +50,7 @@ type InstallInput struct {
 }
 
 // installCmd returns the cobra command for chaincode install
+//安装链码的命令
 func installCmd(cf *ChaincodeCmdFactory, i *Installer, cryptoProvider bccsp.BCCSP) *cobra.Command {
 	chaincodeInstallCmd = &cobra.Command{
 		Use:       "install",

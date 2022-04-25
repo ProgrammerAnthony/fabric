@@ -28,8 +28,10 @@ type Plugin interface {
 	// The Endorsement: A signature over the payload, and an identity that is used to verify the signature
 	// The payload that was given as input (could be modified within this function)
 	// Or error on failure
+	//背书处理
 	Endorse(payload []byte, sp *peer.SignedProposal) (*peer.Endorsement, []byte, error)
 
+	//初始化
 	// Init injects dependencies into the instance of the Plugin
 	Init(dependencies ...Dependency) error
 }

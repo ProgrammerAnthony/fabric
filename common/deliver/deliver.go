@@ -154,6 +154,7 @@ func NewHandler(cm ChainManager, timeWindow time.Duration, mutualTLS bool, metri
 }
 
 // Handle receives incoming deliver requests.
+//处理deliver请求，发送block数据
 func (h *Handler) Handle(ctx context.Context, srv *Server) error {
 	addr := util.ExtractRemoteAddress(ctx)
 	logger.Debugf("Starting new deliver loop for %s", addr)
@@ -203,7 +204,7 @@ func (h *Handler) deliverBlocks(ctx context.Context, srv *Server, envelope *cb.E
 		logger.Warningf("error parsing envelope from %s: %s", addr, err)
 		return cb.Status_BAD_REQUEST, nil
 	}
-
+	//获取chain
 	chain := h.ChainManager.GetChain(chdr.ChannelId)
 	if chain == nil {
 		// Note, we log this at DEBUG because SDKs will poll waiting for channels to be created
@@ -366,6 +367,7 @@ func (h *Handler) parseEnvelope(ctx context.Context, envelope *cb.Envelope) (*cb
 		return nil, nil, nil, err
 	}
 
+	//验证channel header
 	err = h.validateChannelHeader(ctx, chdr)
 	if err != nil {
 		return nil, nil, nil, err

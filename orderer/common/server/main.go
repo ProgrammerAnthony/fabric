@@ -249,6 +249,7 @@ func Main() {
 	defer opsSystem.Stop()
 
 	mutualTLS := serverConfig.SecOpts.UseTLS && serverConfig.SecOpts.RequireClientCert
+	//构建order server
 	server := NewServer(
 		manager,
 		metricsProvider,
@@ -276,6 +277,7 @@ func Main() {
 	if conf.General.Profile.Enabled {
 		go initializeProfilingService(conf)
 	}
+	//AtomicBroadcastServer 和GrpcServer区别是啥？
 	ab.RegisterAtomicBroadcastServer(grpcServer.Server(), server)
 	logger.Info("Beginning to serve requests")
 	if err := grpcServer.Start(); err != nil {
@@ -499,6 +501,7 @@ func initializeClusterClientConfig(conf *localconfig.TopLevel) comm.ClientConfig
 	return cc
 }
 
+//初始化server配置
 func initializeServerConfig(conf *localconfig.TopLevel, metricsProvider metrics.Provider) comm.ServerConfig {
 	// secure server config
 	secureOpts := comm.SecureOptions{

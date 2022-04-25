@@ -154,6 +154,7 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, invoke bool, cf *ChaincodeCmdFac
 		if err != nil {
 			return errors.WithMessage(err, "error while unmarshaling proposal response payload")
 		}
+		//解析对应的链码行为
 		ca, err := protoutil.UnmarshalChaincodeAction(pRespPayload.Extension)
 		if err != nil {
 			return errors.WithMessage(err, "error while unmarshaling chaincode action")
@@ -568,6 +569,7 @@ func ChaincodeInvokeOrQuery(
 	bc common.BroadcastClient,
 ) (*pb.ProposalResponse, error) {
 	// Build the ChaincodeInvocationSpec message
+	//1 构建CIS message
 	invocation := &pb.ChaincodeInvocationSpec{ChaincodeSpec: spec}
 
 	creator, err := signer.Serialize()
@@ -593,6 +595,7 @@ func ChaincodeInvokeOrQuery(
 		return nil, errors.WithMessagef(err, "error creating proposal for %s", funcName)
 	}
 
+	//获取已经验签的proposal
 	signedProp, err := protoutil.GetSignedProposal(prop, signer)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error creating signed proposal for %s", funcName)
@@ -616,6 +619,7 @@ func ChaincodeInvokeOrQuery(
 			if proposalResp.Response.Status >= shim.ERRORTHRESHOLD {
 				return proposalResp, nil
 			}
+			//创建验签的tx
 			// assemble a signed transaction (it's an Envelope message)
 			env, err := protoutil.CreateSignedTx(prop, signer, responses...)
 			if err != nil {
@@ -644,6 +648,7 @@ func ChaincodeInvokeOrQuery(
 			}
 
 			// send the envelope for ordering
+			//发送给排序
 			if err = bc.Send(env); err != nil {
 				return proposalResp, errors.WithMessagef(err, "error sending transaction for %s", funcName)
 			}

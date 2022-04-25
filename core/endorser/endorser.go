@@ -102,6 +102,7 @@ type Endorser struct {
 	Metrics                *Metrics
 }
 
+// 调用系统链码和用户链码
 // call specified chaincode (system or user)
 func (e *Endorser) callChaincode(txParams *ccprovider.TransactionParams, input *pb.ChaincodeInput, chaincodeName string) (*pb.Response, *pb.ChaincodeEvent, error) {
 	defer func(start time.Time) {
@@ -175,6 +176,7 @@ func (e *Endorser) callChaincode(txParams *ccprovider.TransactionParams, input *
 }
 
 // SimulateProposal simulates the proposal by calling the chaincode
+//模拟提交 simulate proposal，endorser节点的功能
 func (e *Endorser) SimulateProposal(txParams *ccprovider.TransactionParams, chaincodeName string, chaincodeInput *pb.ChaincodeInput) (*pb.Response, []byte, *pb.ChaincodeEvent, error) {
 	logger := decorateLogger(endorserLogger, txParams)
 
@@ -294,7 +296,7 @@ func (e *Endorser) preProcess(up *UnpackedProposal, channel *Channel) error {
 }
 
 // ProcessProposal process the Proposal
-//endorser 角色处理gRPC请求
+//endorser 角色处理gRPC请求，endorser 处理proposal的关键方法，分为解包，校验ACL，模拟交易几个流程
 func (e *Endorser) ProcessProposal(ctx context.Context, signedProp *pb.SignedProposal) (*pb.ProposalResponse, error) {
 	// start time for computing elapsed time metric for successfully endorsed proposals
 	startTime := time.Now()

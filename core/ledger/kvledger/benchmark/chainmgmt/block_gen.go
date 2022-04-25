@@ -23,6 +23,7 @@ const (
 type txEnvBytes []byte
 
 // blkGenerator generates blocks in sequence. One instance of blkGenerator is maintained for each chain
+// 每条链有一个blkGenerator，用于生成block数据
 type blkGenerator struct {
 	batchConf         *BatchConf
 	blockNum          uint64
@@ -83,6 +84,7 @@ func (bg *blkGenerator) nextBlock() *common.Block {
 	if len(block.Data.Data) == 0 {
 		return nil
 	}
+	//主要包含，data，preHash和当前的dataHash
 	block.Header.DataHash = protoutil.BlockDataHash(block.Data)
 	block.Header.Number = bg.blockNum
 	block.Header.PreviousHash = bg.previousBlockHash

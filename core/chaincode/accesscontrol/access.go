@@ -59,6 +59,7 @@ func (ac *Authenticator) Generate(ccName string) (*CertAndPrivKeyPair, error) {
 	}, nil
 }
 
+//授权
 func (ac *Authenticator) authenticate(msg *pb.ChaincodeMessage, stream grpc.ServerStream) error {
 	if msg.Type != pb.ChaincodeMessage_REGISTER {
 		logger.Warning("Got message", msg, "but expected a ChaincodeMessage_REGISTER message")

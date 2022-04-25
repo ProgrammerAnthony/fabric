@@ -56,6 +56,7 @@ func instantiateCmd(cf *ChaincodeCmdFactory, cryptoProvider bccsp.BCCSP) *cobra.
 
 //instantiate the command via Endorser
 func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envelope, error) {
+	//获取 Chaincode spec,链码的基础结构
 	spec, err := getChaincodeSpec(cmd)
 	if err != nil {
 		return nil, err
@@ -77,6 +78,7 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 	}
 
 	var signedProp *pb.SignedProposal
+	//获取已经验签的proposal
 	signedProp, err = protoutil.GetSignedProposal(prop, cf.Signer)
 	if err != nil {
 		return nil, fmt.Errorf("error creating signed proposal  %s: %s", chainFuncName, err)
@@ -90,6 +92,7 @@ func instantiate(cmd *cobra.Command, cf *ChaincodeCmdFactory) (*protcommon.Envel
 
 	if proposalResponse != nil {
 		// assemble a signed transaction (it's an Envelope message)
+		//创建验签的交易
 		env, err := protoutil.CreateSignedTx(prop, cf.Signer, proposalResponse)
 		if err != nil {
 			return nil, fmt.Errorf("could not assemble transaction, err %s", err)
@@ -126,6 +129,7 @@ func chaincodeDeploy(cmd *cobra.Command, args []string, cf *ChaincodeCmdFactory,
 	}
 
 	if env != nil {
+		//发送给order
 		err = cf.BroadcastClient.Send(env)
 	}
 

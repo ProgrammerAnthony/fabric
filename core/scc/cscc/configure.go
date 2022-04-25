@@ -4,6 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
+//处理peer节点上的通道配置
 // Package cscc chaincode configer provides functions to manage
 // configuration transactions as the network is being reconfigured. The
 // configuration transactions arrive from the ordering service to the committer
@@ -235,6 +236,7 @@ func validateConfigBlock(block *common.Block, bccsp bccsp.BCCSP) error {
 // joinChain will join the specified chain in the configuration block.
 // Since it is the first block, it is the genesis block containing configuration
 // for this chain, so we want to update the Chain object with this info
+// peer 加入某通道，peer根据初始区块参数加入通道，并完成账本相关初始化操作
 func (e *PeerConfiger) joinChain(
 	channelID string,
 	block *common.Block,
@@ -251,6 +253,7 @@ func (e *PeerConfiger) joinChain(
 
 // Return the current configuration block for the specified channelID. If the
 // peer doesn't belong to the channel, return error
+//获取指定通道内本地配置的最新区块
 func (e *PeerConfiger) getConfigBlock(channelID []byte) pb.Response {
 	if channelID == nil {
 		return shim.Error("ChannelID must not be nil.")
@@ -274,6 +277,7 @@ func (e *PeerConfiger) getConfigBlock(channelID []byte) pb.Response {
 }
 
 // getChannels returns information about all channels for this peer
+//获取peer加入的所有通道
 func (e *PeerConfiger) getChannels() pb.Response {
 	channelInfoArray := e.peer.GetChannelsInfo()
 

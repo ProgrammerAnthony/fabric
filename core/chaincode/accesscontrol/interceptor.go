@@ -20,7 +20,7 @@ type interceptor struct {
 
 // ChaincodeStream defines a gRPC stream for sending
 // and receiving chaincode messages
-//定义gRPC stream 用于接受和发送链码消息
+//定义gRPC stream 用于接受和发送链码消息(接口定义)
 type ChaincodeStream interface {
 	// Send sends a chaincode message
 	Send(*pb.ChaincodeMessage) error

@@ -52,7 +52,7 @@ func (e *DefaultEndorsement) Endorse(prpBytes []byte, sp *peer.SignedProposal) (
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not sign the proposal response payload")
 	}
-	//签名背书
+	//签名背书由peer节点中的endorser节点完成
 	endorsement := &peer.Endorsement{Signature: signature, Endorser: identityBytes}
 	return endorsement, prpBytes, nil
 }

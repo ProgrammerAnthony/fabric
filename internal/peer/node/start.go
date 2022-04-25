@@ -442,7 +442,7 @@ func serve(args []string) error {
 			EbMetadataProvider:              ebMetadataProvider,
 		},
 	)
-
+	//新建gRPC的server
 	peerServer, err := comm.NewGRPCServer(listenAddr, serverConfig)
 	if err != nil {
 		logger.Fatalf("Failed to create peer server (%s)", err)

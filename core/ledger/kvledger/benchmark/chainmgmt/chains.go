@@ -42,13 +42,16 @@ type chainsMgr struct {
 func newChainsMgr(mgrConf *ChainMgrConf, batchConf *BatchConf, initOp chainInitOp) *chainsMgr {
 	dataDir := filepath.Join(mgrConf.DataDir, "ledgersData")
 	ledgermgmtInitializer := ledgermgmttest.NewInitializer(dataDir)
+	//默认开启historydb
 	ledgermgmtInitializer.Config.HistoryDBConfig.Enabled = true
 	if os.Getenv("useCouchDB") == "true" {
+		//需要配置couchdb的地址
 		couchdbAddr, set := os.LookupEnv("COUCHDB_ADDR")
 		if !set {
 			panic("environment variable 'useCouchDB' is set to true but 'COUCHDB_ADDR' is not set")
 		}
 		ledgermgmtInitializer.Config.StateDBConfig.StateDatabase = "CouchDB"
+		//使用coucedb还是leverDB
 		ledgermgmtInitializer.Config.StateDBConfig.CouchDB = &ledger.CouchDBConfig{
 			Address:            couchdbAddr,
 			RedoLogPath:        filepath.Join(dataDir, "couchdbRedologs"),
@@ -111,6 +114,7 @@ type Chain struct {
 	m            *chainsMgr
 }
 
+//ledger处理链创建
 func newChain(id ChainID, peerLedger ledger.PeerLedger, m *chainsMgr) *Chain {
 	bcInfo, err := peerLedger.GetBlockchainInfo()
 	panicOnError(err)

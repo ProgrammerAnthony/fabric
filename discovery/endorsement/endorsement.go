@@ -81,6 +81,7 @@ func NewEndorsementAnalyzer(gs gossipSupport, pf policyFetcher, pe principalEval
 type peerPrincipalEvaluator func(member NetworkMember, principal *msp.MSPPrincipal) bool
 
 // PeersForEndorsement returns an EndorsementDescriptor for a given set of peers, channel, and chaincode
+// peer节点中的endorser类型？
 func (ea *endorsementAnalyzer) PeersForEndorsement(channelID common.ChannelID, interest *discovery.ChaincodeInterest) (*discovery.EndorsementDescriptor, error) {
 	membersAndCC, err := ea.peersByCriteria(channelID, interest, false)
 	if err != nil {

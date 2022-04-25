@@ -54,6 +54,7 @@ func validateProposal(signedProp *peer.SignedProposal) error {
 }
 
 // ProcessProposal processes a signed proposal
+// processProposal 先验证，再处理
 func (f *expirationCheckFilter) ProcessProposal(ctx context.Context, signedProp *peer.SignedProposal) (*peer.ProposalResponse, error) {
 	if err := validateProposal(signedProp); err != nil {
 		return nil, err

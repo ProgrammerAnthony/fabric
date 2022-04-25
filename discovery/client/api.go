@@ -50,6 +50,7 @@ type ChannelResponse interface {
 	// Filter: Filters and sorts the endorsers
 	// The given InvocationChain specifies the chaincode calls (along with collections)
 	// that the client passed during the construction of the request
+	//过滤返回
 	Endorsers(invocationChain InvocationChain, f Filter) (Endorsers, error)
 }
 

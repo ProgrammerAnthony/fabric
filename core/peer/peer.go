@@ -61,6 +61,7 @@ type gossipSupport struct {
 	channelconfig.Channel
 }
 
+//？
 func ConfigBlockFromLedger(ledger ledger.PeerLedger) (*common.Block, error) {
 	peerLogger.Debugf("Getting config block")
 
@@ -166,6 +167,7 @@ type configSupport struct {
 func (c *configSupport) GetChannelConfig(cid string) cc.Config {
 	channel := c.peer.Channel(cid)
 	if channel == nil {
+		//channel必须和peer关联
 		peerLogger.Errorf("[channel %s] channel not associated with this peer", cid)
 		return nil
 	}
@@ -211,15 +213,16 @@ func (p *Peer) CreateChannel(
 	legacyLifecycleValidation plugindispatcher.LifecycleResources,
 	newLifecycleValidation plugindispatcher.CollectionAndLifecycleResources,
 ) error {
+	//从创始块创建账本，账本初始化
 	l, err := p.LedgerMgr.CreateLedger(cid, cb)
 	if err != nil {
 		return errors.WithMessage(err, "cannot create ledger from genesis block")
 	}
-
+	//创建channel
 	if err := p.createChannel(cid, l, deployedCCInfoProvider, legacyLifecycleValidation, newLifecycleValidation); err != nil {
 		return err
 	}
-
+	//初始化channel
 	p.initChannel(cid)
 	return nil
 }

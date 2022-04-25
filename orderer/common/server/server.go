@@ -174,6 +174,7 @@ func (s *server) Broadcast(srv ab.AtomicBroadcast_BroadcastServer) error {
 }
 
 // Deliver sends a stream of blocks to a client after ordering
+//发送排序后的数据
 func (s *server) Deliver(srv ab.AtomicBroadcast_DeliverServer) error {
 	logger.Debugf("Starting new Deliver handler")
 	defer func() {

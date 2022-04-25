@@ -26,9 +26,11 @@ type ContextDatum interface{}
 type Plugin interface {
 	// Validate returns nil if the action at the given position inside the transaction
 	// at the given position in the given block is valid, or an error if not.
+	//验证区块中特定位置的交易是否合法
 	Validate(block *common.Block, namespace string, txPosition int, actionPosition int, contextData ...ContextDatum) error
 
 	// Init injects dependencies into the instance of the Plugin
+	//初始化
 	Init(dependencies ...Dependency) error
 }
 

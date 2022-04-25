@@ -16,6 +16,7 @@ import (
 type Category int
 
 const (
+	//BTL= block to live
 	// PvtdataExpiry represents the bookkeeping related to expiry of pvtdata because of BTL policy
 	PvtdataExpiry Category = iota
 	// MetadataPresenceIndicator maintains the bookkeeping about whether metadata is ever set for a namespace

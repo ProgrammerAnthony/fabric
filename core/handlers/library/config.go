@@ -29,6 +29,7 @@ type HandlerConfig struct {
 	Library string `mapstructure:"library" yaml:"library"`
 }
 
+//加载peer节点配置
 func LoadConfig() (Config, error) {
 	var authFilters, decorators []*HandlerConfig
 	if err := mapstructure.Decode(viper.Get("peer.handlers.authFilters"), &authFilters); err != nil {
