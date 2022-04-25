@@ -153,6 +153,7 @@ func (h *Handler) handleMessage(msg *pb.ChaincodeMessage) error {
 
 	switch h.state {
 	case Created:
+		//PEER_LIFECC_HANDLER的初始状态为Created走这里
 		return h.handleMessageCreatedState(msg)
 	case Ready:
 		return h.handleMessageReadyState(msg)
@@ -355,6 +356,7 @@ func (h *Handler) streamDone() <-chan struct{} {
 func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 	defer h.deregister()
 
+	//创建用于标识与_lifecycle通信结束的chan。
 	h.mutex.Lock()
 	h.streamDoneChan = make(chan struct{})
 	h.mutex.Unlock()
@@ -363,6 +365,8 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 	h.chatStream = stream
 	h.errChan = make(chan error, 1)
 
+	//创建心跳触发器.定时向_lifecycle发送心跳消息，
+	//心跳间隔由core.yaml中的chaincode.keepalive设定。
 	var keepaliveCh <-chan time.Time
 	if h.Keepalive != 0 {
 		ticker := time.NewTicker(h.Keepalive)
@@ -377,13 +381,17 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 	}
 	msgAvail := make(chan *recvMsg, 1)
 
+	//启动使用PEER_STREAM接收_lifecycle消息的协程。
+	//从_lifecycle接收的消息将被转发至msgAvail。
+	//这里只是先行接收一次_lifecycle启动后发送的“注册”消息，也会触发下一步的循环接收。
 	receiveMessage := func() {
 		in, err := h.chatStream.Recv()
 		msgAvail <- &recvMsg{in, err}
 	}
-
 	go receiveMessage()
+
 	for {
+		//for +select 循环接收并处理来自_lifecycle的消息。
 		select {
 		case rmsg := <-msgAvail:
 			switch {
@@ -400,6 +408,10 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 				chaincodeLogger.Debugf("%+v", err)
 				return err
 			default:
+				//正常链码在 case rmsg := <-msgAvail:处被接受
+				//并在default分支中，先执行err :=h.handleMessage(rmsg.msg)
+				//处理当次链码消息，之后再次执行goreceiveMessage()接收下一个
+				//_lifecycle消息，形成依次循环接收链码消息的效果。
 				err := h.handleMessage(rmsg.msg)
 				if err != nil {
 					err = errors.WithMessage(err, "error handling message, ending stream")
@@ -407,6 +419,7 @@ func (h *Handler) ProcessStream(stream ccintf.ChaincodeStream) error {
 					return err
 				}
 
+				//if 注册流程：peer端最初在这里收到chaincode的注册信息
 				go receiveMessage()
 			}
 
@@ -476,6 +489,7 @@ func (h *Handler) HandleRegister(msg *pb.ChaincodeMessage) {
 		return
 	}
 	h.chaincodeID = chaincodeID.Name
+	//在core/chaincode/handler_registry.go中实现，遵循注册消息的指示，在peer端注册专属于_lifecycle的PEER_LIFECC_HANDLER。
 	err = h.Registry.Register(h)
 	if err != nil {
 		h.notifyRegistry(err)
@@ -483,17 +497,20 @@ func (h *Handler) HandleRegister(msg *pb.ChaincodeMessage) {
 	}
 
 	chaincodeLogger.Debugf("Got %s for chaincodeID = %s, sending back %s", pb.ChaincodeMessage_REGISTER, h.chaincodeID, pb.ChaincodeMessage_REGISTERED)
+	//peer端向_lifecycle发送PEER_LIFECC_HANDLER“已注册”的消息。
 	if err := h.serialSend(&pb.ChaincodeMessage{Type: pb.ChaincodeMessage_REGISTERED}); err != nil {
 		chaincodeLogger.Errorf("error sending %s: %s", pb.ChaincodeMessage_REGISTERED, err)
 		h.notifyRegistry(err)
 		return
 	}
 
+	//标记PEER_LIFECC_HANDLER的状态为Established，即已与_lifecycle建立通信连接。
 	h.state = Established
 
 	chaincodeLogger.Debugf("Changed state to established for %s", h.chaincodeID)
 
 	// for dev mode this will also move to ready automatically
+	//向_lifecycle发送“准备就绪”消息并标记PEER_LIFECC_HANDLER的状态为Ready，同时结束监听_lifecycle启动状态的等待，
 	h.notifyRegistry(nil)
 }
 

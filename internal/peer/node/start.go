@@ -638,6 +638,7 @@ func serve(args []string) error {
 		BuildRegistry:             buildRegistry,
 	}
 
+	//系统链码实例创建
 	lifecycleSCC := &lifecycle.SCC{
 		Dispatcher: &dispatcher.Dispatcher{
 			Protobuf: &dispatcher.ProtobufImpl{},
@@ -666,6 +667,8 @@ func serve(args []string) error {
 		chaincodeLauncher.CertGenerator = nil
 	}
 
+	//创建链码支持对象chaincodeSupport，包含链码生命周期管理所需的所有数据和功能，
+	//如调用分发器、ACL提供者、应用通道配置检索对象、链码部署信息提供者、链码启动器、链码容器控制器、内建系统链码列表等
 	chaincodeSupport := &chaincode.ChaincodeSupport{
 		ACLProvider:            aclProvider,
 		AppConfig:              peerInstance,
@@ -752,11 +755,13 @@ func serve(args []string) error {
 	}
 
 	// deploy system chaincodes
+	//部署系统链码，遍历所有内建系统链码进行部署，包括_lifecycle
 	for _, cc := range []scc.SelfDescribingSysCC{lsccInst, csccInst, qsccInst, lifecycleSCC} {
 		if enabled, ok := chaincodeConfig.SCCAllowlist[cc.Name()]; !ok || !enabled {
 			logger.Infof("not deploying chaincode %s as it is not enabled", cc.Name())
 			continue
 		}
+		//构建了peer和系统链码的通信流程
 		scc.DeploySysCC(cc, chaincodeSupport)
 	}
 

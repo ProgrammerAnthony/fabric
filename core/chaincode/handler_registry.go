@@ -131,6 +131,7 @@ func (r *HandlerRegistry) Register(h *Handler) error {
 	defer r.mutex.Unlock()
 
 	if r.handlers[h.chaincodeID] != nil {
+		//重复注册将报错
 		chaincodeLogger.Debugf("duplicate registered handler(key:%s) return error", h.chaincodeID)
 		return errors.Errorf("duplicate chaincodeID: %s", h.chaincodeID)
 	}

@@ -105,6 +105,7 @@ func (cs *ChaincodeSupport) LaunchInProc(ccid string) <-chan struct{} {
 
 // HandleChaincodeStream implements ccintf.HandleChaincodeStream for all vms to call with appropriate stream
 func (cs *ChaincodeSupport) HandleChaincodeStream(stream ccintf.ChaincodeStream) error {
+	//专用于处理_lifecycle消息的Handler，这里标记为PEER_LIFECC_HANDLER，在peer端，每个链码均有一个专属的Handler。
 	handler := &Handler{
 		Invoker:                cs,
 		Keepalive:              cs.Keepalive,
@@ -122,6 +123,7 @@ func (cs *ChaincodeSupport) HandleChaincodeStream(stream ccintf.ChaincodeStream)
 		TotalQueryLimit:        cs.TotalQueryLimit,
 	}
 
+	//启动peer端与_lifecycle交互的进程。
 	return handler.ProcessStream(stream)
 }
 

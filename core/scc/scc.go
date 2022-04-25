@@ -61,28 +61,38 @@ type SelfDescribingSysCC interface {
 func DeploySysCC(sysCC SelfDescribingSysCC, chaincodeStreamHandler ChaincodeStreamHandler) {
 	sysccLogger.Infof("deploying system chaincode '%s'", sysCC.Name())
 
+	//查看_lifecycle的启动状态，获取监控启动状态的chan
 	ccid := ChaincodeID(sysCC.Name())
 	done := chaincodeStreamHandler.LaunchInProc(ccid)
 
+	//创建两个peer节点与_lifecycle相互收发消息的chan，一个用于“peer发，chaincode收”，一个用于“chaincode发，peer收”
 	peerRcvCCSend := make(chan *pb.ChaincodeMessage)
 	ccRcvPeerSend := make(chan *pb.ChaincodeMessage)
 
+	//启动peer端与_lifecycle交互的协程
 	go func() {
+		//使用上文创建的两个chan，创建peer端与_lifecycle通信的对象，这里标记为PEER_STREAM
 		stream := newInProcStream(peerRcvCCSend, ccRcvPeerSend)
 		defer stream.CloseSend()
 
 		sysccLogger.Debugf("starting chaincode-support stream for  %s", ccid)
+		//使用PEER_STREAM启动与_lifecycle的通信进程。
 		err := chaincodeStreamHandler.HandleChaincodeStream(stream)
 		sysccLogger.Criticalf("shim stream ended with err: %v", err)
 	}()
 
+	//启动_lifecycle与peer端交互的协程。
 	go func(sysCC SelfDescribingSysCC) {
+		//使用上文创建的两个chan，创建_lifecycle与peer端通信的对象，这里标记为CC_STREAM
 		stream := newInProcStream(ccRcvPeerSend, peerRcvCCSend)
 		defer stream.CloseSend()
 
 		sysccLogger.Debugf("chaincode started for %s", ccid)
+		//创建处理peer端消息的Handler，并使用通信对象启动与peer端通信的进程。
+		//创建用于处理peer端消息的Handler，这里标记为LIFECC_ HANDLER，stream为与peer节点通信的对象，cc为_lifecycle链码对象
+		//向peer端发送一条“注册”消息，告之_lifecycle自身已开始启动，可以开始初始化。
 		err := shim.StartInProc(ccid, stream, sysCC.Chaincode())
 		sysccLogger.Criticalf("system chaincode ended with err: %v", err)
 	}(sysCC)
-	<-done
+	<-done // 监听_lifecycle的启动状态，等待其准备就绪。
 }
