@@ -191,16 +191,19 @@ func processChaincodeExecutionResult(txid, ccName string, resp *pb.ChaincodeMess
 // Invoke will invoke chaincode and return the message containing the response.
 // The chaincode will be launched if it is not already running.
 func (cs *ChaincodeSupport) Invoke(txParams *ccprovider.TransactionParams, chaincodeName string, input *pb.ChaincodeInput) (*pb.ChaincodeMessage, error) {
+	//检查调用信息，判断本次所调用的链码是否需先初始化，即需先执行一次链码的Init接口。这里_lifecycle不需要。
 	ccid, cctype, err := cs.CheckInvocation(txParams, chaincodeName, input)
 	if err != nil {
 		return nil, errors.WithMessage(err, "invalid invocation")
 	}
 
+	//在未启动的情况下，启动调用的链码，并返回专用于处理_lifecycle消息的Handler。
 	h, err := cs.Launch(ccid)
 	if err != nil {
 		return nil, err
 	}
 
+	//使用Handler调用_lifecycle，处理安装mycc的交易
 	return cs.execute(cctype, txParams, chaincodeName, input, h)
 }
 
@@ -256,6 +259,7 @@ func (cs *ChaincodeSupport) CheckInvocation(txParams *ccprovider.TransactionPara
 
 // execute executes a transaction and waits for it to complete until a timeout value.
 func (cs *ChaincodeSupport) execute(cctyp pb.ChaincodeMessage_Type, txParams *ccprovider.TransactionParams, namespace string, input *pb.ChaincodeInput, h *Handler) (*pb.ChaincodeMessage, error) {
+	//创建一条发送给_lifecycle的链码消息，为ChaincodeMessage_TRANSACTION类型，这里标记为CM1。
 	input.Decorations = txParams.ProposalDecorations
 
 	payload, err := proto.Marshal(input)
@@ -270,6 +274,7 @@ func (cs *ChaincodeSupport) execute(cctyp pb.ChaincodeMessage_Type, txParams *cc
 		ChannelId: txParams.ChannelID,
 	}
 
+	//在core/chaincode/handler.go中实现，将CM1发送至_lifecycle，在超时时间内等待_lifecycle执行安装mycc.tar.gz完毕。
 	timeout := cs.executeTimeout(namespace, input)
 	ccresp, err := h.Execute(txParams, namespace, ccMsg, timeout)
 	if err != nil {

@@ -665,6 +665,8 @@ func (ef *ExternalFunctions) QueryOrgApprovals(name string, cd *ChaincodeDefinit
 // It returns the hash to reference the chaincode by or an error on failure.
 func (ef *ExternalFunctions) InstallChaincode(chaincodeInstallPackage []byte) (*chaincode.InstalledChaincode, error) {
 	// Let's validate that the chaincodeInstallPackage is at least well formed before writing it
+	//core/chaincode/persistence/chaincode_package.go中实现，
+	//读取安装包mycc.tar.gz中源码、元数据、状态数据库索引配置，放入ChaincodePackage
 	pkg, err := ef.Resources.PackageParser.Parse(chaincodeInstallPackage)
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not parse as a chaincode install package")
@@ -674,6 +676,10 @@ func (ef *ExternalFunctions) InstallChaincode(chaincodeInstallPackage []byte) (*
 		return nil, errors.New("empty metadata for supplied chaincode")
 	}
 
+	//在core/chaincode/persistence/persistence.go中实现，以“链码标签:安装包SHA-256哈希值”格式，
+	//作为链码包ID，也作为peer节点内部使用的链码ID，还作为文件名，如mycc_1.0:10e4...8f20，
+	//将mycc.tar.gz的数据固化存储至链码安装路径下。链码安装路径为core.yaml中peer.fileSystemPath指定
+	//目录下的lifecycle/chaincodes子目录。
 	packageID, err := ef.Resources.ChaincodeStore.Save(pkg.Metadata.Label, chaincodeInstallPackage)
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not save cc install package")
@@ -683,6 +689,8 @@ func (ef *ExternalFunctions) InstallChaincode(chaincodeInstallPackage []byte) (*
 	buildLock.Lock()
 	defer buildLock.Unlock()
 
+	//依据链码包ID，获取mycc的构建状态。若未构建，
+	//参见构建链码镜像的内容，则使用容器路由器，将构建的命令路由至Docker容器或外部服务构建器，开始构建并等待构建结束。
 	buildStatus, ok := ef.BuildRegistry.BuildStatus(packageID)
 	if ok {
 		// another invocation of lifecycle has concurrently
@@ -701,12 +709,16 @@ func (ef *ExternalFunctions) InstallChaincode(chaincodeInstallPackage []byte) (*
 		return nil, errors.WithMessage(err, "could not build chaincode")
 	}
 
+	//若存在链码安装监听者对象，则调用xxx方法，
+	//处理链码mycc的安装事件，主要处理安装链码的缓存信息，
+	//并配合执行相应动作。这在发生peer节点重启后能够自动重新运行之前已运行的链码容器或安装mycc过程中断等特殊情况下非常有用。
 	if ef.InstallListener != nil {
 		ef.InstallListener.HandleChaincodeInstalled(pkg.Metadata, packageID)
 	}
 
 	logger.Infof("Successfully installed chaincode with package ID '%s'", packageID)
 
+	//向调用者返回已安装的链码信息：链码包ID、链码标签。
 	return &chaincode.InstalledChaincode{
 		PackageID: packageID,
 		Label:     pkg.Metadata.Label,

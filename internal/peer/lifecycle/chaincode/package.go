@@ -73,6 +73,10 @@ func PackageCmd(p *Packager) *cobra.Command {
 		Short:     "Package a chaincode",
 		Long:      "Package a chaincode and write the package to a file.",
 		ValidArgs: []string{"1"},
+		//若打包对象为空，则首先注册Fabric支持的链码编程语言平台，
+		//平台对象在core/chaincode/platforms下的Go、Node.js、Java中实现
+		//，依据各平台应用链码实现的特点，负责各自源码、源码依赖项、状态数据库索引配置的检查、打包。
+		//然后创建链码打包对象，包括文件系统读写对象Writer，用于固化存储链码压缩包。
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if p == nil {
 				pr := packaging.NewRegistry(packaging.SupportedPlatforms...)
@@ -116,6 +120,7 @@ func (p *Packager) PackageChaincode(args []string) error {
 }
 
 func (p *Packager) setInput(outputFile string) {
+	//设定打包链码的参数信息，包括链码所在路径、链码语言、链码标签、输出的链码压缩包名称。
 	p.Input = &PackageInput{
 		OutputFile: outputFile,
 		Path:       chaincodePath,
@@ -126,6 +131,10 @@ func (p *Packager) setInput(outputFile string) {
 
 // Package packages chaincodes into the package type,
 // (.tar.gz) used by _lifecycle and writes it to disk
+//使用指定的平台对象，创建两个文件。文件一：链码包元数据文件metadata.json，包括链码类型、链码源码在链码包中的路径、链码标签，
+//如{"path":"…/hyperledger/…/abstore", "type":"golang","label":"mycc_1"}。
+//文件二：链码源码包code.tar.gz，将链码源码（包括go.mod、vendor、状态数据库索引配置目录META-INF）
+//按metadata.json中path指定的路径放至src目录下，打包成code.tar.gz。最后将两个文件打包成mycc.tar.gz。
 func (p *Packager) Package() error {
 	err := p.Input.Validate()
 	if err != nil {

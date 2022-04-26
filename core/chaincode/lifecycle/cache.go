@@ -233,8 +233,10 @@ func (c *Cache) handleChaincodeInstalledWhileLocked(initializing bool, md *persi
 	encodedCCHash := protoutil.MarshalOrPanic(&lb.StateData{
 		Type: &lb.StateData_String_{String_: packageID},
 	})
+	//计算链码包ID的哈希，查看本地缓存中是否存在该链码的信息。
 	hashOfCCHash := string(util.ComputeSHA256(encodedCCHash))
 	localChaincode, ok := c.localChaincodes[hashOfCCHash]
+	//若不存在该链码的信息，该链码如mycc一样是第一次安装，则创建添加mycc的本地缓存信息，并通知链码监管协程，告之mycc已安装(链码监管协程在peer节点启动时已经启动。)。
 	if !ok {
 		localChaincode = &LocalChaincode{
 			References: map[string]map[string]*CachedChaincodeDefinition{},
@@ -248,6 +250,9 @@ func (c *Cache) handleChaincodeInstalledWhileLocked(initializing bool, md *persi
 		Path:      md.Path,
 		Label:     md.Label,
 	}
+	//遍历各通道的链码使用信息，若当前安装的mycc是一个在通道中已通过其他背书节点提交了的链码，
+	//则执行c.chaincodeCustodian.NotifyInstalledAndRunnable(packageID)，通知链码监管协程在本节点启动mycc。
+	//最初这里mycc尚未提交，不需要执行此步。
 	for channelID, channelCache := range localChaincode.References {
 		for chaincodeName, cachedChaincode := range channelCache {
 			cachedChaincode.InstallInfo = localChaincode.Info
@@ -256,6 +261,12 @@ func (c *Cache) handleChaincodeInstalledWhileLocked(initializing bool, md *persi
 		}
 	}
 
+	//初始化本地已有链码时，即像mycc这样第一次安装的链码，则首先处理其他服务或模块的链码安装事件监听，
+	//当前只有状态数据库对象（在core/ledger/kvledger/txmgmt/privacyenabledstate/common_storage_db.go中实现）
+	//在此作为代理监听对象，监听链码安装事件，在状态数据库中创建链码包中配置的索引（链码目录下的META-INF目录）；
+	//其次处理更新其他服务或模块中与通道链码相关的元数据。在internal/peer/node/start.go的serve函数中，
+	//metadataManager :=lifecycle.NewMetadataManager()和metadataManager.AddListener(…)
+	//只添加了通过执行gossipService.UpdateChaincodes(…)以更新gossip服务的通道状态中链码信息的监听对象。
 	if !initializing {
 		c.eventBroker.ProcessInstallEvent(localChaincode)
 		c.handleMetadataUpdates(localChaincode)

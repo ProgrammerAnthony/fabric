@@ -175,6 +175,7 @@ func (scc *SCC) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // type marshaled lb.<FunctionName>Args and return a marshaled lb.<FunctionName>Result
 // 路由接口，将请求转发到对应的生命周期处理
 func (scc *SCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	//获取调用链码的参数，即上文的ChaincodeInput。
 	args := stub.GetArgs()
 	if len(args) == 0 {
 		return shim.Error("lifecycle scc must be invoked with arguments")
@@ -186,6 +187,7 @@ func (scc *SCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
 	var ac channelconfig.Application
 	var channelID string
+	//安装链码不属于通道背书服务，因此不需要进行应用通道版本能力检查。
 	if channelID = stub.GetChannelID(); channelID != "" {
 		channelConfig := scc.ChannelConfigSource.GetStableChannelConfig(channelID)
 		if channelConfig == nil {
@@ -202,18 +204,23 @@ func (scc *SCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	}
 
 	// Handle ACL:
-	//处理权限认证管理
+	//处理权限认证管理,获取peer CLI发送的签名背书申请。
 	sp, err := stub.GetSignedProposal()
 	if err != nil {
 		return shim.Error(fmt.Sprintf("Failed getting signed proposal from stub: [%s]", err))
 	}
 
-	//权限检查
+	//检查背书申请中客户端的签名，验证其是否满足通道配置中ACL的InstallChaincode方法策略。
+	//参见sampleconfig/configtx.yaml中Application.ACLs._lifecycle/ CheckCommitReadiness策略控制项，
+	//它用于控制谁有资格调用_lifecycle的CheckCommitReadiness方法，即执行peer lifecyclechaincode checkcommitreadiness命令。
 	err = scc.ACLProvider.CheckACL(fmt.Sprintf("%s/%s", LifecycleNamespace, args[0]), stub.GetChannelID(), sp)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("Failed to authorize invocation due to failed ACL check: %s", err))
 	}
 
+	//根据args[0]所指定的方法名InstallChaincode、args[1]中的mycc.tar.gz数据，
+	//使用_lifecycle的调用分发器（在core/dispatcher/dispatcher.go中实现），
+	//判断所调用方法的参数、返回值后，具体执下面定义的Invocation的InstallChaincode方法进行安装操作。
 	outputBytes, err := scc.Dispatcher.Dispatch(
 		args[1],
 		string(args[0]),
@@ -266,11 +273,13 @@ func (i *Invocation) InstallChaincode(input *lb.InstallChaincodeArgs) (proto.Mes
 		)
 	}
 
+	//安装mycc.tar.gz 这种文件
 	installedCC, err := i.SCC.Functions.InstallChaincode(input.ChaincodeInstallPackage)
 	if err != nil {
 		return nil, err
 	}
 
+	//返回已安装的链码包ID、链码标签。
 	return &lb.InstallChaincodeResult{
 		Label:     installedCC.Label,
 		PackageId: installedCC.PackageID,

@@ -176,7 +176,7 @@ func (h *Handler) handleMessageReadyState(msg *pb.ChaincodeMessage) error {
 	switch msg.Type {
 	case pb.ChaincodeMessage_COMPLETED, pb.ChaincodeMessage_ERROR:
 		h.Notify(msg)
-
+	//各种链码的对应接口的处理
 	case pb.ChaincodeMessage_PUT_STATE:
 		go h.HandleTransaction(msg, h.HandlePutState)
 	case pb.ChaincodeMessage_DEL_STATE:
