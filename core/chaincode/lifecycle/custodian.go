@@ -100,6 +100,8 @@ func (cc *ChaincodeCustodian) Work(buildRegistry *container.BuildRegistry, build
 		cc.mutex.Unlock()
 
 		if chore.runnable {
+			//执行提交mycc链码定义的命令后，将通知链码监管协程，告之mycc已安装且可运行。
+			//链码监管协程使用Launcher的Launch方法，启动mycc的Docker容器，
 			if err := launcher.Launch(chore.chaincodeID); err != nil {
 				logger.Warningf("could not launch chaincode '%s': %s", chore.chaincodeID, err)
 			}
@@ -118,6 +120,7 @@ func (cc *ChaincodeCustodian) Work(buildRegistry *container.BuildRegistry, build
 			logger.Debugf("skipping build of chaincode '%s' as it is already in progress", chore.chaincodeID)
 			continue
 		}
+		//执行安装应用链码mycc的命令后，将通知链码监管协程，告之mycc已安装。链码监管协程使用Router的Build方法，构建mycc的Docker镜像
 		err := builder.Build(chore.chaincodeID)
 		if err != nil {
 			logger.Warningf("could not build chaincode '%s': %s", chore.chaincodeID, err)

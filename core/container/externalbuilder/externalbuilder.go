@@ -23,8 +23,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-//Fabric v2.0支持将链码在Faric外部部署与执行以方便用户独立管理每个节点的代码运行环境。这有助于Kubernetes等Fabric云上部署链码。
-//不再需要在每个节点构建和运行，链码现在可以作为一个服务运行，其生命周期在Fabric之外进行管理。此功能利用了Fabric v2.0外部构建器和启动器功能，使操作员能够通过程序扩展对等方来构建、启动和发现链码。
+//外部服务虚拟容器构建器ExternalBuilder
+//Fabric v2.0支持将链码在Faric外部部署与执行以方便用户独立管理每个节点的代码运行环境。
+//这有助于Kubernetes等Fabric云上部署链码。
+//不再需要在每个节点构建和运行，链码现在可以作为一个服务运行，其生命周期在Fabric之外进行管理。
+//此功能利用了Fabric v2.0外部构建器和启动器功能，使操作员能够通过程序扩展对等方来构建、启动和发现链码。
 var (
 	// DefaultPropagateEnvironment enumerates the list of environment variables that are
 	// implicitly propagated to external builder and launcher commands.

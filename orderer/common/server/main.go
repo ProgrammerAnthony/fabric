@@ -71,6 +71,7 @@ var (
 
 // Main is the entry point of orderer process
 func Main() {
+	//kingpin是一个命令行的解析工具，正好和Peer中的cobra相辅相成
 	fullCmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	// "version" command
@@ -79,11 +80,13 @@ func Main() {
 		return
 	}
 
+	//拿到相关的配置文件数据 .yaml
 	conf, err := localconfig.Load()
 	if err != nil {
 		logger.Error("failed to parse config: ", err)
 		os.Exit(1)
 	}
+	//初始化日志
 	initializeLogging()
 
 	prettyPrintStruct(conf)
@@ -95,20 +98,25 @@ func Main() {
 		logger.Panicf("Failed to get local MSP identity: %s", signErr)
 	}
 
+	//处理相关的配置信息和监听信息
 	opsSystem := newOperationsSystem(conf.Operations, conf.Metrics)
 	metricsProvider := opsSystem.Provider
+	//创建观察者并监控相关信息到日志
 	logObserver := floggingmetrics.NewObserver(metricsProvider)
 	flogging.SetObserver(logObserver)
-	//初始化服务配置
+	//初始化服务配置,利用前面生的配置初始GRPC服务---构造CA证书组件对象
 	serverConfig := initializeServerConfig(conf, metricsProvider)
-	//创建gRPC server
+	//创建gRPC server,这当中会利用SecureOptions、KeepaliveOptions来保存TLS的公私钥，C/S两端的证书以及
+	//呼应时间、等待时间等。
 	grpcServer := initializeGrpcServer(conf, serverConfig)
+	//证书管理
 	caMgr := &caManager{
 		appRootCAsByChain:     make(map[string][][]byte),
 		ordererRootCAsByChain: make(map[string][][]byte),
 		clientRootCAs:         serverConfig.SecOpts.ClientRootCAs,
 	}
 
+	//创建帐本工厂
 	lf, _, err := createLedgerFactory(conf, metricsProvider)
 	if err != nil {
 		logger.Panicf("Failed to create ledger factory: %v", err)
@@ -144,7 +152,7 @@ func Main() {
 	// determine whether the orderer is of cluster type
 	var isClusterType bool
 	if clusterBootBlock == nil {
-		//集群模式不需要创世块？
+
 		logger.Infof("Starting without a system channel")
 		isClusterType = true
 	} else {
@@ -161,6 +169,7 @@ func Main() {
 	// configure following artifacts properly if orderer is of cluster type
 	var repInitiator *onboarding.ReplicationInitiator
 	clusterServerConfig := serverConfig
+	//默认集群会共享一个gRPC server
 	clusterGRPCServer := grpcServer // by default, cluster shares the same grpc server
 	var clusterClientConfig comm.ClientConfig
 	var clusterDialer *cluster.PredicateDialer
@@ -170,6 +179,7 @@ func Main() {
 
 	if isClusterType {
 		logger.Infof("Setting up cluster")
+		//初始化集群客户配置，签名、私钥、证书和TLS等
 		clusterClientConfig = initializeClusterClientConfig(conf)
 		clusterDialer = &cluster.PredicateDialer{
 			Config: clusterClientConfig,
@@ -217,6 +227,7 @@ func Main() {
 		serversToUpdate = append(serversToUpdate, grpcServer)
 	}
 
+	//TLS连接认证的回调函数，更新每个通道的TLS客户端CA证书
 	tlsCallback := func(bundle *channelconfig.Bundle) {
 		logger.Debug("Executing callback to update root CAs")
 		caMgr.updateTrustedRoots(bundle, serversToUpdate...)
@@ -228,6 +239,7 @@ func Main() {
 		}
 	}
 
+	//多通道注册初始化--创建数据存储路径，包括索引数据库和通道区块数据
 	manager := initializeMultichannelRegistrar(
 		clusterBootBlock,
 		repInitiator,
@@ -243,6 +255,7 @@ func Main() {
 		tlsCallback,
 	)
 
+	//启动监听
 	if err = opsSystem.Start(); err != nil {
 		logger.Panicf("failed to start operations subsystem: %s", err)
 	}
@@ -278,8 +291,10 @@ func Main() {
 		go initializeProfilingService(conf)
 	}
 	//AtomicBroadcastServer 和GrpcServer区别是啥？
+	//将Order排序服务注册到GRP服务中
 	ab.RegisterAtomicBroadcastServer(grpcServer.Server(), server)
 	logger.Info("Beginning to serve requests")
+	//启动GRPC服务，开始监听Peer请求
 	if err := grpcServer.Start(); err != nil {
 		logger.Fatalf("Atomic Broadcast gRPC server has terminated while serving requests due to: %v", err)
 	}
@@ -365,6 +380,7 @@ func initializeLogging() {
 }
 
 // Start the profiling service if enabled.
+//初始化Profile服务，用来启动监听，在Peer中有类似代码
 func initializeProfilingService(conf *localconfig.TopLevel) {
 	logger.Info("Starting Go pprof profiling service on:", conf.General.Profile.Address)
 	// The ListenAndServe() call does not return unless an error occurs.
@@ -501,7 +517,7 @@ func initializeClusterClientConfig(conf *localconfig.TopLevel) comm.ClientConfig
 	return cc
 }
 
-//初始化server配置
+//初始化server配置,利用前面生的配置初始GRPC服务---构造CA证书组件对象
 func initializeServerConfig(conf *localconfig.TopLevel, metricsProvider metrics.Provider) comm.ServerConfig {
 	// secure server config
 	secureOpts := comm.SecureOptions{
@@ -699,6 +715,7 @@ type healthChecker interface {
 	RegisterChecker(component string, checker healthz.HealthChecker) error
 }
 
+//多通道注册初始化--创建数据存储路径，包括索引数据库和通道区块数据
 func initializeMultichannelRegistrar(
 	bootstrapBlock *cb.Block,
 	repInitiator *onboarding.ReplicationInitiator,

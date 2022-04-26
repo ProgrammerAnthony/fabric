@@ -67,18 +67,23 @@ func (r *RuntimeLauncher) ChaincodeClientInfo(ccid string) (*ccintf.PeerConnecti
 	}, nil
 }
 
+//执行提交mycc链码定义的命令后，将通知链码监管协程，告之mycc已安装且可运行。链码监管协程使用Launcher的Launch方法，启动mycc的Docker容器
 func (r *RuntimeLauncher) Launch(ccid string, streamHandler extcc.StreamHandler) error {
 	var startFailCh chan error
 	var timeoutCh <-chan time.Time
 
 	startTime := time.Now()
+	//从链码容器状态注册管理对象中查询当前mycc容器的启动状态。
 	launchState, alreadyStarted := r.Registry.Launching(ccid)
 	if !alreadyStarted {
+		//若mycc容器尚未启动，则启动一个协程，运行mycc的Docker容器。
 		startFailCh = make(chan error, 1)
 		timeoutCh = time.NewTimer(r.StartupTimeout).C
 
 		go func() {
 			// go through the build process to obtain connecion information
+			//再次调用Build方法，但这次不为构建mycc，构建后再次调用Build方法将直接返回已构建mycc实例的服务端信息。
+			//以Docker方式构建mycc实例时，服务端信息为nil。
 			ccservinfo, err := r.Runtime.Build(ccid)
 			if err != nil {
 				startFailCh <- errors.WithMessage(err, "error building chaincode")
@@ -87,6 +92,8 @@ func (r *RuntimeLauncher) Launch(ccid string, streamHandler extcc.StreamHandler)
 
 			// chaincode server model indicated... proceed to connect to CC
 			if ccservinfo != nil {
+				//针对将链码作为独立外部服务所构建的mycc实例，此时使用mycc服务端的信息和ChaincodeSupport，
+				//建立peer节点与mycc之间的通信，并阻塞，不再向下执行。
 				if err = r.ConnectionHandler.Stream(ccid, ccservinfo, streamHandler); err != nil {
 					startFailCh <- errors.WithMessagef(err, "connection to %s failed", ccid)
 					return
@@ -96,6 +103,9 @@ func (r *RuntimeLauncher) Launch(ccid string, streamHandler extcc.StreamHandler)
 				return
 			}
 
+			//继续执行，则mycc实例是以Docker方式构建的。这里将链码作为客户端，peer节点作为服务端，
+			//创建mycc容器连接peer容器的连接配置，包含peer节点的监听地址、TLS配置，
+			//其中TLS证书数据由core/chaincode/accesscontrol/access.go中的Authenticator生成。
 			// default peer-as-server model... compute connection information for CC callback
 			// and proceed to launch chaincode
 			ccinfo, err := r.ChaincodeClientInfo(ccid)
@@ -107,10 +117,12 @@ func (r *RuntimeLauncher) Launch(ccid string, streamHandler extcc.StreamHandler)
 				startFailCh <- errors.New("could not get connection info")
 				return
 			}
+			//底层调用Router的Start方法，将路由至Docker容器构建器，最终启动容器
 			if err = r.Runtime.Start(ccid, ccinfo); err != nil {
 				startFailCh <- errors.WithMessage(err, "error starting container")
 				return
 			}
+			//等待mycc容器启动结束，并通知注册mycc容器的启动状态。如何等待?
 			exitCode, err := r.Runtime.Wait(ccid)
 			if err != nil {
 				launchState.Notify(errors.Wrap(err, "failed to wait on container exit"))

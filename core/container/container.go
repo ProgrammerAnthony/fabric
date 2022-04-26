@@ -79,6 +79,7 @@ type Router struct {
 	mutex           sync.Mutex
 }
 
+//返回对应的容器,通过链码id
 func (r *Router) getInstance(ccid string) Instance {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -94,9 +95,12 @@ func (r *Router) getInstance(ccid string) Instance {
 	return vm
 }
 
+//执行安装应用链码mycc的命令后，将通知链码监管协程，告之mycc已安装。链码监管协程使用Router的Build方法，构建mycc的Docker镜像
 func (r *Router) Build(ccid string) error {
 	var instance Instance
 
+	//若设定链码作为外部服务，即背书节点的core.yaml中chaincode.externalBuilders处设置不为空，
+	//则优先使用外部服务虚拟容器构建对象构建链码外部服务，所做的工作一般是整理链码端连接信息，编译
 	if r.ExternalBuilder != nil {
 		// for now, the package ID we retrieve from the FS is always the ccid
 		// the chaincode uses for registration
@@ -112,6 +116,7 @@ func (r *Router) Build(ccid string) error {
 		}
 	}
 
+	//若未将链码设定为外部服务，或构建过程出错，构建出的mycc实例将为nil
 	if instance == nil {
 		if r.DockerBuilder == nil {
 			return errors.New("no DockerBuilder, cannot build")
@@ -122,6 +127,7 @@ func (r *Router) Build(ccid string) error {
 		}
 		defer codeStream.Close()
 
+		//依据链码ID、链码包元数据、链码包源码数据，构建mycc的Docker镜像，如dev-peer0.org1-mycc_1-10e4...8f20。
 		instance, err = r.DockerBuilder.Build(ccid, metadata, codeStream)
 		if err != nil {
 			return errors.WithMessage(err, "docker build failed")

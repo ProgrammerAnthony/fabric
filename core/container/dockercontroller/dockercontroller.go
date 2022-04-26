@@ -40,6 +40,7 @@ var (
 //go:generate counterfeiter -o mock/dockerclient.go --fake-name DockerClient . dockerClient
 
 // dockerClient represents a docker client
+//持有Docker容器构建器DockerBuilder
 type dockerClient interface {
 	// CreateContainer creates a docker container, returns an error in case of failure
 	CreateContainer(opts docker.CreateContainerOptions) (*docker.Container, error)
@@ -177,7 +178,9 @@ func (vm *DockerVM) buildImage(ccid string, reader io.Reader) error {
 }
 
 // Build is responsible for building an image if it does not already exist.
+//依据链码ID、链码包元数据、链码包源码数据，构建mycc的Docker镜像，如dev-peer0.org1-mycc_1-10e4...8f20
 func (vm *DockerVM) Build(ccid string, metadata *persistence.ChaincodePackageMetadata, codePackage io.Reader) (container.Instance, error) {
+	//依据链码ID，以一定的格式和规则，确定mycc的镜像名称。
 	imageName, err := vm.GetVMNameForDocker(ccid)
 	if err != nil {
 		return nil, err
@@ -186,15 +189,22 @@ func (vm *DockerVM) Build(ccid string, metadata *persistence.ChaincodePackageMet
 	// This is an awkward translation, but better here in a future dead path
 	// than elsewhere.  The old enum types are capital, but at least as implemented
 	// lifecycle tools seem to allow type to be set lower case.
+	//从链码包元数据中获取链码的运行平台类型，这里设定为GOLANG。
 	ccType := strings.ToUpper(metadata.Type)
 
+	//使用Docker客户端向Docker服务端发送命令，检查mycc的镜像名称是否可用。
 	_, err = vm.Client.InspectImage(imageName)
 	switch err {
+	//若mycc的镜像名称可用，则进入case docker.ErrNoSuchImage分支。
 	case docker.ErrNoSuchImage:
+		//在core/chaincode/platforms/builder.go中实现，使用GOLANG平台的创建工具，
+		//具体调用core/chaincode/platforms/golang/platform.go中的实现，创建一个包含用于生成mycc镜像的Dockerfile内容的可读数据流。
 		dockerfileReader, err := vm.PlatformBuilder.GenerateDockerBuild(ccType, metadata.Path, codePackage)
 		if err != nil {
 			return nil, errors.Wrap(err, "platform builder failed")
 		}
+		//使用Dockerfile内容的可读数据流，调用Hyperledger/fabric-ccenv镜像编译mycc源码（被编译成名为chaincode的程序）、
+		//构建生成mycc的Docker镜像。
 		err = vm.buildImage(ccid, dockerfileReader)
 		if err != nil {
 			return nil, errors.Wrap(err, "docker image build failed")
@@ -203,7 +213,8 @@ func (vm *DockerVM) Build(ccid string, metadata *persistence.ChaincodePackageMet
 	default:
 		return nil, errors.Wrap(err, "docker image inspection failed")
 	}
-
+	//存储已构建的mycc的容器实例。
+	//这里的容器是Fabric中的容器概念，实质是一个包含mycc镜像信息、Docker客户端等用于启动运行链码Docker容器的对象。
 	return &ContainerInstance{
 		DockerVM: vm,
 		CCID:     ccid,
@@ -277,16 +288,20 @@ func (vm *DockerVM) GetEnv(ccid string, tlsConfig *ccintf.TLSConfig) []string {
 
 // Start starts a container using a previously created docker image
 func (vm *DockerVM) Start(ccid string, ccType string, peerConnection *ccintf.PeerConnection) error {
+	//使用Docker客户端获取mycc镜像名，并依之确定容器名。
 	imageName, err := vm.GetVMNameForDocker(ccid)
 	if err != nil {
 		return err
 	}
 
+	//若容器名被正在运行的容器占用，则停止该容器。
 	containerName := vm.GetVMName(ccid)
 	logger := dockerLogger.With("imageName", imageName, "containerName", containerName)
 
 	vm.stopInternal(containerName)
 
+	//依据mycc连接peer节点的配置，生成启动mycc容器时所执行的命令、环境变量集。
+	//命令如chaincode -peer.address=peer0.org1:7052，环境变量如CORE_PEER_TLS_ENABLED=true。
 	args, err := vm.GetArgs(ccType, peerConnection.Address)
 	if err != nil {
 		return errors.WithMessage(err, "could not get args")
@@ -296,6 +311,7 @@ func (vm *DockerVM) Start(ccid string, ccType string, peerConnection *ccintf.Pee
 	env := vm.GetEnv(ccid, peerConnection.TLSConfig)
 	dockerLogger.Debugf("start container with env:\n\t%s", strings.Join(env, "\n\t"))
 
+	//依据镜像名、容器名、启动命令、环境变量集，使用Docker客户端创建一个mycc容器对象。
 	err = vm.createContainer(imageName, containerName, args, env)
 	if err != nil {
 		logger.Errorf("create container failed: %s", err)
@@ -346,6 +362,7 @@ func (vm *DockerVM) Start(ccid string, ccType string, peerConnection *ccintf.Pee
 	}
 
 	// start container with HostConfig was deprecated since v1.10 and removed in v1.2
+	//使用Docker客户端，启动mycc的Docker容器。
 	err = vm.Client.StartContainer(containerName, nil)
 	if err != nil {
 		dockerLogger.Errorf("start-could not start container: %s", err)

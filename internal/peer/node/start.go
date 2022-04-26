@@ -535,7 +535,7 @@ func serve(args []string) error {
 
 	var dockerBuilder container.DockerBuilder
 	if coreConfig.VMEndpoint != "" {
-		//docker client链接
+		//docker client链接,底层主要调用第三方库fsouza / go-dockerclient
 		client, err := createDockerClient(coreConfig)
 		if err != nil {
 			logger.Panicf("cannot create docker client: %s", err)
@@ -651,6 +651,9 @@ func serve(args []string) error {
 		ACLProvider:            aclProvider,
 	}
 
+	//使用Router和其他对象，创建一个用于lifecycle应用链码生命周期管理的链码容器运行工具Launcher。
+	//Router自身有构建、运行链码容器的能力，但不同类型的容器运行时所需的其他对象大相径庭，因此又创建包含Router的RuntimeLauncher。
+	//最后使用RuntimeLauncher和ChaincodeSupport，创建“增强版”链码运行工具custodianLauncherAdapter，供后台监听链码事件的协程使用。
 	chaincodeLauncher := &chaincode.RuntimeLauncher{
 		Metrics:           chaincode.NewLaunchMetrics(opsSystem.Provider),
 		Registry:          chaincodeHandlerRegistry,
@@ -687,10 +690,14 @@ func serve(args []string) error {
 		UserRunsCC:             userRunsCC,
 	}
 
+	//创建“增强版”链码运行工具custodianLauncherAdapter，供后台监听链码事件的协程使用。
+	//最后使用RuntimeLauncher和ChaincodeSupport，创建“增强版”链码运行工具custodianLauncherAdapter，供后台监听链码事件的协程使用。
 	custodianLauncher := custodianLauncherAdapter{
 		launcher:      chaincodeLauncher,
 		streamHandler: chaincodeSupport,
 	}
+	//在core/chaincode/lifecycle/custodian.go中实现，将链码状态注册对象、Router、custodianLauncherAdapter
+	//传入lifecycle的链码监管协程，开始监听构建、运行、停止应用链码容器的通知。
 	go chaincodeCustodian.Work(buildRegistry, containerRouter, custodianLauncher)
 
 	ccSupSrv := pb.ChaincodeSupportServer(chaincodeSupport)
